@@ -86,8 +86,7 @@ Requisição HTTP
 | Perfil | Permissões |
 |---|---|
 | professor | Acesso total |
-| dentista | Consultas, cirurgias, prontuário |
-| aluno | Consultas e cirurgias sob supervisão |
+| aluno | Consultas prontuario e cirurgias sob supervisão |
 | recepcionista | Agendamento e cadastro de pacientes |
 
 ## Primeiros Passos
@@ -134,5 +133,3 @@ JWT_SECRET=sua_chave_secreta_aqui
 
 ---
 
-Autor: João Pedro Ortolan Pereira — Engenharia de Software, Campo Real
-Projeto: TCC — Sistema de Gestão Clínica Odontológica Universitária
