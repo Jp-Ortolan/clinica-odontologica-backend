@@ -10,8 +10,8 @@ const autorizar = require('../middlewares/perfil');
 // GET /api/usuarios → apenas admin e recepcionista
 router.get('/', auth, autorizar('professor', 'recepcionista'), usuarioController.listar);
 
-// GET /api/usuarios/:id → admin, dentista e recepcionista
-router.get('/:id', auth, autorizar('professor', 'dentista', 'recepcionista'), usuarioController.buscarPorId);
+// GET /api/usuarios/:id → professor e recepcionista
+router.get('/:id', auth, autorizar('professor', 'recepcionista'), usuarioController.buscarPorId);
 
 // POST /api/usuarios → apenas admin
 router.post('/', auth, autorizar('professor'), usuarioController.criar);

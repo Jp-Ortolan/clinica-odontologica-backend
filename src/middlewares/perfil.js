@@ -4,9 +4,8 @@
 // pois depende do req.user preenchido pelo JWT.
 
 // Perfis disponíveis no sistema:
-// - professor     → acesso total
-// - dentista      → consultas, cirurgias, prontuário
-// - aluno         → consultas e cirurgias sob supervisão
+// - professor     → acesso total (cadastro de usuários, gestão geral)
+// - aluno         → consultas e cirurgias sob supervisão, estoque (visualização)
 // - recepcionista → agendamento e cadastro de pacientes
 
 function autorizar(...perfisPermitidos) {
