@@ -1,9 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const materialController = require('../controllers/materialController');
-// const authMiddleware = require('../middlewares/auth');
+const auth = require('../middlewares/auth');
+const autorizar = require('../middlewares/perfil');
 
-// Defina as rotas aqui
-// Exemplo: router.get('/', authMiddleware, materialController.listar);
+// GET /api/materiais → professor e aluno (recepcionista não acessa estoque)
+router.get('/', auth, autorizar('professor', 'aluno'), materialController.listar);
+
+// GET /api/materiais/:id → professor e aluno
+router.get('/:id', auth, autorizar('professor', 'aluno'), materialController.buscarPorId);
+
+// POST /api/materiais → professor e aluno
+router.post('/', auth, autorizar('professor', 'aluno'), materialController.criar);
+
+// PUT /api/materiais/:id → professor e aluno
+router.put('/:id', auth, autorizar('professor', 'aluno'), materialController.atualizar);
+
+// DELETE /api/materiais/:id → apenas professor
+router.delete('/:id', auth, autorizar('professor'), materialController.deletar);
 
 module.exports = router;

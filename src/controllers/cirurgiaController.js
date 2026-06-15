@@ -1,8 +1,20 @@
 // Controller: cirurgia
-// Recebe req/res e delega ao service
+// Implementação pendente — fase 3
 
-const cirurgiaService = require('../services/cirurgiaService');
+async function listar(req, res) {
+  res.status(501).json({ message: 'Módulo cirurgia: não implementado ainda' });
+}
+async function buscarPorId(req, res) {
+  res.status(501).json({ message: 'Módulo cirurgia: não implementado ainda' });
+}
+async function criar(req, res) {
+  res.status(501).json({ message: 'Módulo cirurgia: não implementado ainda' });
+}
+async function atualizar(req, res) {
+  res.status(501).json({ message: 'Módulo cirurgia: não implementado ainda' });
+}
+async function deletar(req, res) {
+  res.status(501).json({ message: 'Módulo cirurgia: não implementado ainda' });
+}
 
-module.exports = {
-  // Adicione os métodos aqui
-};
+module.exports = { listar, buscarPorId, criar, atualizar, deletar };
