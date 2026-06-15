@@ -1,6 +1,6 @@
 # Clínica Odontológica — Backend
 
-Sistema de gestão para clínica odontológica universitária — TCC Engenharia de Software.
+Sistema de gestão para clínica odontológica universitária 
 
 ## Stack
 
