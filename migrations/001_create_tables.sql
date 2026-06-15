@@ -1,9 +1,6 @@
 -- ============================================================
 -- Migration 001 — Criação das tabelas do sistema
--- Projeto: Clínica Odontológica Universitária
--- Data: 2026-06-06
--- ============================================================
--- Execute no banco: clinica_odontologica
+
 -- Ordem de criação respeita as dependências (chaves estrangeiras)
 -- ============================================================
 
@@ -16,7 +13,7 @@ CREATE TABLE IF NOT EXISTS usuario (
     senha_hash    VARCHAR NOT NULL,
     telefone      VARCHAR,
     setor         VARCHAR,
-    perfil        VARCHAR NOT NULL,   -- professor | dentista | aluno | recepcionista
+    perfil        VARCHAR NOT NULL,   -- professor | aluno | recepcionista
     data_admissao DATE,
     ativo         BOOLEAN DEFAULT TRUE,
     criado_em     TIMESTAMP DEFAULT NOW()

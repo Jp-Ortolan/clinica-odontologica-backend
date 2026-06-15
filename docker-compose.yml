@@ -1,10 +1,7 @@
-# ============================================================
 # docker-compose.yml — Clínica Odontológica
 # Sobe o backend + banco PostgreSQL juntos
-# ============================================================
 # Para iniciar: docker compose up
 # Para parar:  docker compose down
-# ============================================================
 
 version: '3.8'
 
