@@ -1,0 +1,40 @@
+# render.yaml — Blueprint de deploy de homologação (Render)
+#
+# Como usar:
+#   1. Suba este repositório no GitHub (se ainda não estiver).
+#   2. No painel do Render: New > Blueprint > selecione o repositório.
+#   3. O Render lê este arquivo e cria automaticamente o banco e o serviço web abaixo.
+#   4. Depois do primeiro deploy, rode as migrations (veja scripts/migrate.js)
+#      usando o Shell do serviço web no painel do Render:
+#        node scripts/migrate.js
+#        node scripts/seed-admin.js
+#
+# Observação: o banco Postgres free do Render expira 30 dias após a criação
+# (com 14 dias de carência depois disso). Para homologação/apresentação do
+# TCC isso é suficiente — se precisar manter por mais tempo, é só recriar
+# o banco ou migrar para um plano pago antes do prazo.
+
+databases:
+  - name: clinica-odontologica-db
+    plan: free
+    databaseName: clinica_odontologica
+    user: clinica_user
+
+services:
+  - type: web
+    name: clinica-odontologica-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clinica-odontologica-db
+          property: connectionString

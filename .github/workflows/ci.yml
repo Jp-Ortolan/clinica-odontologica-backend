@@ -1,7 +1,3 @@
-# ============================================================
-# GitHub Actions — CI (Integração Contínua)
-# Clínica Odontológica Backend
-# ============================================================
 # Este workflow roda automaticamente quando:
 #   - É feito um push para as branches main ou develop
 #   - É aberto um Pull Request para main ou develop

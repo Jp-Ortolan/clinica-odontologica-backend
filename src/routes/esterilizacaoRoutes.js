@@ -1,22 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const esterilizacaoController = require('../controllers/esterilizacaoController');
+const c  = require('../controllers/esterilizacaoController');
+const cb = require('../controllers/controleBiologicoController');
 const auth = require('../middlewares/auth');
 const autorizar = require('../middlewares/perfil');
 
-// GET /api/esterilizacoes → professor e aluno
-router.get('/', auth, autorizar('professor', 'aluno'), esterilizacaoController.listar);
+// ── Ciclos ───────────────────────────────────────────────────
+router.get('/',    auth, autorizar('professor', 'aluno'), c.listar);
+router.get('/:id', auth, autorizar('professor', 'aluno'), c.buscarPorId);
+router.post('/',   auth, autorizar('professor', 'aluno'), c.criar);
+router.put('/:id', auth, autorizar('professor', 'aluno'), c.atualizar);
+router.delete('/:id', auth, autorizar('professor'), c.deletar);
 
-// GET /api/esterilizacoes/:id → professor e aluno
-router.get('/:id', auth, autorizar('professor', 'aluno'), esterilizacaoController.buscarPorId);
+// ── Pacotes do ciclo ─────────────────────────────────────────
+router.get('/:id/pacotes',  auth, autorizar('professor', 'aluno'), c.listarPacotes);
+router.post('/:id/pacotes', auth, autorizar('professor', 'aluno'), c.criarPacote);
 
-// POST /api/esterilizacoes → professor e aluno (registra ciclo)
-router.post('/', auth, autorizar('professor', 'aluno'), esterilizacaoController.criar);
+// ── QR Code e status do pacote ───────────────────────────────
+router.get('/pacotes/:pacoteId/qrcode',      auth, autorizar('professor', 'aluno'), c.obterQRCode);
+router.patch('/pacotes/:pacoteId/status',    auth, autorizar('professor', 'aluno'), c.atualizarStatusPacote);
 
-// PUT /api/esterilizacoes/:id → professor e aluno
-router.put('/:id', auth, autorizar('professor', 'aluno'), esterilizacaoController.atualizar);
-
-// DELETE /api/esterilizacoes/:id → apenas professor
-router.delete('/:id', auth, autorizar('professor'), esterilizacaoController.deletar);
+// ── Controle biológico do ciclo ──────────────────────────────
+router.get('/:id/controles',                  auth, autorizar('professor', 'aluno'), cb.listarPorCiclo);
+router.post('/:id/controles',                 auth, autorizar('professor', 'aluno'), cb.criar);
+router.get('/:id/controles/:controleId',      auth, autorizar('professor', 'aluno'), cb.buscarPorId);
+router.put('/:id/controles/:controleId',      auth, autorizar('professor', 'aluno'), cb.atualizar);
+router.delete('/:id/controles/:controleId',   auth, autorizar('professor'),          cb.deletar);
 
 module.exports = router;
