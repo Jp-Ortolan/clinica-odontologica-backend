@@ -7,6 +7,7 @@ router.use('/pacientes',      require('./pacienteRoutes'));
 router.use('/consultas',      require('./consultaRoutes'));
 router.use('/cirurgias',      require('./cirurgiaRoutes'));
 router.use('/materiais',      require('./materialRoutes'));
+router.use('/categorias',     require('./categoriaRoutes'));
 router.use('/movimentacoes',  require('./movimentacaoRoutes'));
 router.use('/esterilizacoes', require('./esterilizacaoRoutes'));
 

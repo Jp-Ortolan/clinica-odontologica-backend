@@ -13,6 +13,9 @@ router.get('/:id', auth, autorizar('professor', 'aluno'), movimentacaoController
 // POST /api/movimentacoes → professor e aluno (registra entrada/saída)
 router.post('/', auth, autorizar('professor', 'aluno'), movimentacaoController.criar);
 
+// PUT /api/movimentacoes/:id → 405 por design (movimentações são imutáveis)
+router.put('/:id', auth, autorizar('professor', 'aluno'), movimentacaoController.atualizar);
+
 // DELETE /api/movimentacoes/:id → apenas professor
 router.delete('/:id', auth, autorizar('professor'), movimentacaoController.deletar);
 
