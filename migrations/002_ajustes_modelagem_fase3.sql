@@ -3,47 +3,79 @@
 ALTER TABLE paciente
     ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
 
-ALTER TABLE material
-    ADD CONSTRAINT uq_material_codigo_barras UNIQUE (codigo_barras);
+-- Postgres não tem "ADD CONSTRAINT IF NOT EXISTS", então cada constraint
+-- abaixo é adicionada dentro de um bloco que primeiro confere se ela já
+-- existe em pg_constraint — assim a migration pode ser reaplicada sem erro
+-- num banco que já tenha essas constraints (ex.: schema criado manualmente
+-- antes deste script de migration existir).
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_material_codigo_barras') THEN
+        ALTER TABLE material ADD CONSTRAINT uq_material_codigo_barras UNIQUE (codigo_barras);
+    END IF;
+END $$;
 
 -- RN-EST-02: estoque nunca pode ficar negativo.
-ALTER TABLE material
-    ADD CONSTRAINT chk_material_quantidade_nao_negativa CHECK (quantidade >= 0);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_material_quantidade_nao_negativa') THEN
+        ALTER TABLE material ADD CONSTRAINT chk_material_quantidade_nao_negativa CHECK (quantidade >= 0);
+    END IF;
+END $$;
 
 -- QR Code do pacote esterilizado deve ser único.
-ALTER TABLE pacote_esterilizado
-    ADD CONSTRAINT uq_pacote_esterilizado_qr_code UNIQUE (qr_code);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_pacote_esterilizado_qr_code') THEN
+        ALTER TABLE pacote_esterilizado ADD CONSTRAINT uq_pacote_esterilizado_qr_code UNIQUE (qr_code);
+    END IF;
+END $$;
 
 -- RN-USR-04: perfis válidos do sistema.
 -- Definição alinhada com a equipe de UX/UI e com a prototipação: apenas 3 perfis.
-ALTER TABLE usuario
-    ADD CONSTRAINT chk_usuario_perfil
-    CHECK (perfil IN ('professor', 'aluno', 'recepcionista'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_usuario_perfil') THEN
+        ALTER TABLE usuario ADD CONSTRAINT chk_usuario_perfil
+            CHECK (perfil IN ('professor', 'aluno', 'recepcionista'));
+    END IF;
+END $$;
 
 --  fluxo de status de consulta.
-ALTER TABLE consulta
-    ADD CONSTRAINT chk_consulta_status
-    CHECK (status IN ('agendada', 'realizada', 'cancelada'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_consulta_status') THEN
+        ALTER TABLE consulta ADD CONSTRAINT chk_consulta_status
+            CHECK (status IN ('agendada', 'realizada', 'cancelada'));
+    END IF;
+END $$;
 
 --  mesmo fluxo para cirurgias.
-ALTER TABLE cirurgia
-    ADD CONSTRAINT chk_cirurgia_status
-    CHECK (status IN ('agendada', 'realizada', 'cancelada'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_cirurgia_status') THEN
+        ALTER TABLE cirurgia ADD CONSTRAINT chk_cirurgia_status
+            CHECK (status IN ('agendada', 'realizada', 'cancelada'));
+    END IF;
+END $$;
 
 -- Tipo de movimentação de estoque só pode ser entrada ou saída.
-ALTER TABLE movimentacao_estoque
-    ADD CONSTRAINT chk_movimentacao_tipo
-    CHECK (tipo IN ('entrada', 'saida'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_movimentacao_tipo') THEN
+        ALTER TABLE movimentacao_estoque ADD CONSTRAINT chk_movimentacao_tipo
+            CHECK (tipo IN ('entrada', 'saida'));
+    END IF;
+END $$;
 
 --  resultado do ciclo de esterilização.
-ALTER TABLE esterilizacao
-    ADD CONSTRAINT chk_esterilizacao_resultado
-    CHECK (resultado IN ('pendente', 'aprovado', 'reprovado'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_esterilizacao_resultado') THEN
+        ALTER TABLE esterilizacao ADD CONSTRAINT chk_esterilizacao_resultado
+            CHECK (resultado IN ('pendente', 'aprovado', 'reprovado'));
+    END IF;
+END $$;
 
 --  fluxo de status do pacote esterilizado.
-ALTER TABLE pacote_esterilizado
-    ADD CONSTRAINT chk_pacote_status
-    CHECK (status IN ('esterilizado', 'utilizado', 'vencido'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_pacote_status') THEN
+        ALTER TABLE pacote_esterilizado ADD CONSTRAINT chk_pacote_status
+            CHECK (status IN ('esterilizado', 'utilizado', 'vencido'));
+    END IF;
+END $$;
 
 
 ALTER TABLE paciente
@@ -58,9 +90,12 @@ ALTER TABLE paciente
     ADD COLUMN IF NOT EXISTS responsavel_telefone VARCHAR(15),
     ADD COLUMN IF NOT EXISTS responsavel_parentesco VARCHAR(50);
 
-ALTER TABLE paciente
-    ADD CONSTRAINT chk_paciente_sexo
-    CHECK (sexo IS NULL OR sexo IN ('masculino', 'feminino', 'outro'));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_paciente_sexo') THEN
+        ALTER TABLE paciente ADD CONSTRAINT chk_paciente_sexo
+            CHECK (sexo IS NULL OR sexo IN ('masculino', 'feminino', 'outro'));
+    END IF;
+END $$;
 
 -- Nova entidade: documentos do paciente (exames, radiografias, formulários)
 -- Tela "Documentos do paciente" na prototipação.
@@ -86,9 +121,12 @@ DROP TABLE IF EXISTS medicamento_paciente;
 ALTER TABLE consulta
     ADD COLUMN IF NOT EXISTS disciplina VARCHAR(50);
 
-ALTER TABLE consulta
-    ADD CONSTRAINT chk_consulta_disciplina
-    CHECK (disciplina IS NULL OR disciplina IN (
-        'Dentística', 'Endodontia', 'Periodontia', 'Ortodontia',
-        'Odontopediatria', 'Cirurgia Bucal', 'Prótese', 'Reabilitação Bucal'
-    ));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_consulta_disciplina') THEN
+        ALTER TABLE consulta ADD CONSTRAINT chk_consulta_disciplina
+            CHECK (disciplina IS NULL OR disciplina IN (
+                'Dentística', 'Endodontia', 'Periodontia', 'Ortodontia',
+                'Odontopediatria', 'Cirurgia Bucal', 'Prótese', 'Reabilitação Bucal'
+            ));
+    END IF;
+END $$;

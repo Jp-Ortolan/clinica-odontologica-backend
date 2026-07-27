@@ -37,18 +37,35 @@ ALTER TABLE material
 
 -- Migra valores antigos da coluna 'categoria' (texto livre) para a nova
 -- categoria_id, quando o texto bater com algum nome cadastrado.
-UPDATE material m
-SET categoria_id = c.id
-FROM categoria c
-WHERE m.categoria_id IS NULL
-  AND m.categoria IS NOT NULL
-  AND lower(m.categoria) = lower(c.nome);
+-- A referência a m.categoria só é válida enquanto a coluna antiga ainda
+-- existir — por isso vai dentro de EXECUTE, que só é interpretado (e a
+-- coluna só é checada) se a condição abaixo for verdadeira. Sem isso, um
+-- banco em que essa migration já rodou (e a coluna já foi removida) trava
+-- com "coluna categoria não existe" ao tentar reaplicar a migration.
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'material' AND column_name = 'categoria'
+    ) THEN
+        EXECUTE '
+            UPDATE material m
+            SET categoria_id = c.id
+            FROM categoria c
+            WHERE m.categoria_id IS NULL
+              AND m.categoria IS NOT NULL
+              AND lower(m.categoria) = lower(c.nome)
+        ';
+    END IF;
+END $$;
 
 -- A coluna antiga de categoria (texto livre) é substituída por categoria_id.
 ALTER TABLE material DROP COLUMN IF EXISTS categoria;
 
 -- 3. Regra de negócio: estoque ideal, quando informado, não pode ser
 -- menor que o estoque mínimo (não faria sentido na tela de detalhes).
-ALTER TABLE material
-    ADD CONSTRAINT chk_material_estoque_ideal
-    CHECK (estoque_ideal IS NULL OR estoque_ideal >= estoque_minimo);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_material_estoque_ideal') THEN
+        ALTER TABLE material ADD CONSTRAINT chk_material_estoque_ideal
+            CHECK (estoque_ideal IS NULL OR estoque_ideal >= estoque_minimo);
+    END IF;
+END $$;
