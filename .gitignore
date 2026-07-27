@@ -9,3 +9,6 @@ docs/
 *.xlsx
 *.zip
 ~$*
+
+# Dumps gerados pelo serviço de backup automático (docker-compose)
+backups/

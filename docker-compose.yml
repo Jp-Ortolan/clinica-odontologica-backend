@@ -43,5 +43,32 @@ services:
       - .:/app
       - /app/node_modules
 
+  # Backup automático do banco (Sprint 5 — DevOps)
+  # Enquanto o `docker compose up` estiver rodando, este serviço tira um
+  # dump do Postgres a cada 6h em /backups (pasta ./backups no host) e
+  # apaga dumps com mais de 7 dias. Restaurar um backup:
+  #   docker compose exec db pg_restore -U postgres -d clinica_odontologica --clean /backups/<arquivo>.dump
+  backup:
+    image: postgres:16-alpine
+    container_name: clinica_backup
+    environment:
+      PGPASSWORD: 123456
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          TIMESTAMP=$$(date +%Y%m%d_%H%M%S)
+          pg_dump -h db -U postgres -d clinica_odontologica -F c -f /backups/backup_$$TIMESTAMP.dump \
+            && echo "[backup] criado backup_$$TIMESTAMP.dump" \
+            || echo "[backup] falhou em $$TIMESTAMP"
+          find /backups -name 'backup_*.dump' -mtime +7 -delete
+          sleep 21600
+        done
+
 volumes:
   postgres_data:
