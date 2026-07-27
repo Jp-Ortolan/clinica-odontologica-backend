@@ -4,8 +4,9 @@
 #
 # O que ele faz:
 #   1. Instala as dependências do projeto
-#   2. Verifica se o projeto inicia sem erros de sintaxe
-#   3. Constrói a imagem Docker para garantir que o build funciona
+#   2. Roda a suíte de testes automatizados (Jest + Supertest)
+#   3. Verifica se o projeto inicia sem erros de sintaxe
+#   4. Constrói a imagem Docker para garantir que o build funciona
 # ============================================================
 
 name: CI — Build e Verificação
@@ -21,8 +22,31 @@ on:
       - develop
 
 jobs:
+  test:
+    name: Rodar Testes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm install
+
+      # Testes usam mocks de repositório — não dependem de banco real,
+      # mas o setup.js define DATABASE_URL/JWT_SECRET de fallback.
+      - name: Rodar testes automatizados (Jest)
+        run: npm test
+
   build:
     name: Verificar Build
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
