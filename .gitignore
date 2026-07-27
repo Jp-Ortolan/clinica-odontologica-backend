@@ -3,3 +3,9 @@ node_modules/
 *.log
 coverage/
 docs/
+
+# Documentos de apoio/entrega (não fazem parte do código-fonte)
+*.docx
+*.xlsx
+*.zip
+~$*
