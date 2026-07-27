@@ -3,6 +3,7 @@
 
 const materialRepository = require('../repositories/materialRepository');
 const categoriaRepository = require('../repositories/categoriaRepository');
+const { gerarQRCode } = require('../utils/qrcode');
 const {
   validarCamposObrigatoriosMaterial,
   validarValoresNumericosMaterial,
@@ -149,4 +150,28 @@ async function deletar(id) {
   return { message: 'Material removido com sucesso' };
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar, comCamposCalculados };
+// QR Code do material (mesmo utilitário já usado nos pacotes de
+// esterilização) — codifica id, nome e código de barras.
+async function obterQRCode(id) {
+  const material = await buscarPorId(id);
+  const texto = `material:${material.id}|codigo_barras:${material.codigo_barras}|nome:${material.nome}`;
+  const qr_code = await gerarQRCode(texto);
+  return { material_id: material.id, nome: material.nome, qr_code };
+}
+
+// Código de barras: o valor único já é obrigatório no cadastro
+// (campo codigo_barras) — este endpoint só devolve o valor pronto para
+// o front renderizar visualmente (ex.: com JsBarcode), sem gerar imagem
+// no servidor.
+async function obterCodigoBarras(id) {
+  const material = await buscarPorId(id);
+  if (!material.codigo_barras) {
+    throw { status: 404, message: 'Este material não possui código de barras cadastrado' };
+  }
+  return { material_id: material.id, nome: material.nome, codigo_barras: material.codigo_barras };
+}
+
+module.exports = {
+  listar, buscarPorId, criar, atualizar, deletar, comCamposCalculados,
+  obterQRCode, obterCodigoBarras,
+};

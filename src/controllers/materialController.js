@@ -49,4 +49,16 @@ async function deletar(req, res, next) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar };
+async function obterQRCode(req, res, next) {
+  try {
+    res.status(200).json(await materialService.obterQRCode(req.params.id));
+  } catch (err) { next(err); }
+}
+
+async function obterCodigoBarras(req, res, next) {
+  try {
+    res.status(200).json(await materialService.obterCodigoBarras(req.params.id));
+  } catch (err) { next(err); }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, deletar, obterQRCode, obterCodigoBarras };
