@@ -131,13 +131,23 @@ Sobe o backend e o banco PostgreSQL juntos, já configurados e conectados. Para 
 docker compose down
 ```
 
+### Backup automático (Sprint 5 — DevOps)
+
+Enquanto o `docker compose up` estiver rodando, o serviço `backup` tira um
+dump do Postgres a cada 6h (pasta `./backups`, gerada localmente e fora do
+Git) e apaga dumps com mais de 7 dias. Para restaurar um backup específico:
+
+```bash
+docker compose exec db pg_restore -U postgres -d clinica_odontologica --clean /backups/<arquivo>.dump
+```
+
 ## Testes
 
 ```bash
 npm test
 ```
 
-Executa os testes automatizados (Jest + Supertest) com mocks de banco de dados — atualmente 14 testes (login + pacientes), todos passando.
+Executa os testes automatizados (Jest + Supertest) com mocks de banco de dados — atualmente 179 testes, todos passando.
 
 ## Variáveis de Ambiente
 
