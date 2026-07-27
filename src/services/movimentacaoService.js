@@ -1,5 +1,4 @@
-// Service: movimentacao
-// Regras de negócio do registro de entradas e saídas de estoque
+// Regras do registro de entradas e saídas de estoque.
 
 const movimentacaoRepository = require('../repositories/movimentacaoRepository');
 const materialRepository = require('../repositories/materialRepository');
@@ -28,7 +27,7 @@ async function criar(dados, usuarioId) {
 
   const quantidade = Number(dados.quantidade);
 
-  // RN-EST-02: o estoque nunca pode ficar negativo.
+  // O estoque nunca pode ficar negativo.
   if (dados.tipo === 'saida' && quantidade > material.quantidade) {
     throw {
       status: 409,

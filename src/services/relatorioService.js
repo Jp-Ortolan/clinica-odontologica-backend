@@ -1,7 +1,6 @@
-// Service: relatório em PDF (Sprint 5 — "Estatísticas+PDF")
 // Gera um PDF com os mesmos indicadores do GET /api/dashboard/resumo,
-// formatados para impressão/entrega — reaproveita o dashboardService
-// para não duplicar as regras de o que cada perfil pode ver.
+// prontos pra imprimir ou anexar. Reaproveita o dashboardService pra não
+// duplicar a regra de o que cada perfil pode ver.
 
 const PDFDocument = require('pdfkit');
 const dashboardService = require('./dashboardService');

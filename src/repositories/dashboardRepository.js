@@ -1,7 +1,4 @@
-// Repository: dashboard
-// Consultas agregadas (contagens) para as telas de Dashboard do
-// protótipo. Escopo da Sprint 5 — resumo numérico; gráficos/PDF ficam
-// para uma iteração futura (ver Backlog_Prototipo_vs_Backend.docx).
+// Consultas agregadas (contagens) para as telas de Dashboard.
 
 const pool = require('../config/database');
 

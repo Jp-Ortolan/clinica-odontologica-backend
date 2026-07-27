@@ -1,4 +1,3 @@
-// Service: dashboard
 // Monta o resumo numérico usado pelas telas de Dashboard (professor/aluno).
 
 const dashboardRepository = require('../repositories/dashboardRepository');

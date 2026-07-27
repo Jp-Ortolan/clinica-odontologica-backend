@@ -1,5 +1,4 @@
-// Testes: módulo CME — ciclos de esterilização, pacotes e controle biológico
-// Card "Testes CME" e "Fluxos esterilização" do cronograma.
+// Testes: módulo CME — ciclos de esterilização, pacotes e controle biológico.
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');

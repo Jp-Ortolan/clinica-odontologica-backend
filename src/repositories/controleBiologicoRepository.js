@@ -1,4 +1,3 @@
-// Repository: controle_biologico
 const pool = require('../config/database');
 
 async function listarPorCiclo(esterilizacaoId) {

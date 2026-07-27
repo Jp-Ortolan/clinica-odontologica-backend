@@ -1,5 +1,4 @@
-// Testes: QR-Code e código de barras do material (telas do protótipo
-// "Tela QR-Code" e "Tela Código de barras" do módulo de estoque).
+// Testes: QR-Code e código de barras do material.
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');

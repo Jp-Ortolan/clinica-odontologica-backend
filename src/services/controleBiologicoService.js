@@ -1,4 +1,3 @@
-// Service: controle_biologico
 const controleBiologicoRepository = require('../repositories/controleBiologicoRepository');
 const esterilizacaoRepository     = require('../repositories/esterilizacaoRepository');
 

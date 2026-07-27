@@ -1,4 +1,4 @@
-// Testes: GET /api/dashboard/relatorio-pdf (Sprint 5 — "Estatísticas+PDF")
+// Testes: GET /api/dashboard/relatorio-pdf
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');

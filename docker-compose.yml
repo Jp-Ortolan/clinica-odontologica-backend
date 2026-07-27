@@ -43,7 +43,7 @@ services:
       - .:/app
       - /app/node_modules
 
-  # Backup automático do banco (Sprint 5 — DevOps)
+  # Backup automático do banco.
   # Enquanto o `docker compose up` estiver rodando, este serviço tira um
   # dump do Postgres a cada 6h em /backups (pasta ./backups no host) e
   # apaga dumps com mais de 7 dias. Restaurar um backup:

@@ -1,6 +1,3 @@
-// Service: auth
-// Regras de negócio de autenticação
-
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { gerarToken } = require('../utils/jwt');
@@ -42,10 +39,9 @@ async function login(email, senha) {
   };
 }
 
-// Solicita a recuperação de senha: gera um token de uso único, válido por
-// 1h, e o associa ao usuário. Em produção esse token seria enviado por
-// e-mail; como o projeto acadêmico não tem infraestrutura de e-mail, o
-// token volta na própria resposta (documentado como simplificação).
+// Gera um token de uso único, válido por 1h, pra recuperação de senha.
+// Em produção esse token iria por e-mail; como o projeto não tem
+// servidor de e-mail configurado, ele volta direto na resposta.
 async function solicitarRecuperacaoSenha(email) {
   const usuario = await authRepository.findByEmail(email);
 
@@ -62,8 +58,7 @@ async function solicitarRecuperacaoSenha(email) {
 
   return {
     message: 'Se o e-mail existir, um link de recuperação foi gerado',
-    // Simplificação para o projeto acadêmico — numa API real este token
-    // nunca voltaria na resposta, apenas por e-mail.
+    // Numa API real esse token nunca voltaria aqui, só por e-mail.
     reset_token: token,
     expira_em: expiraEm,
   };

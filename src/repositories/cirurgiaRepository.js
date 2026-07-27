@@ -1,7 +1,6 @@
-// Repository: cirurgia
-// Responsável por todas as queries SQL da tabela cirurgia, além de
-// mutirão cirúrgico (evento que agrupa cirurgias) e compartilhamento
-// de cursos (alunos vinculados a uma cirurgia para crédito/supervisão).
+// Queries SQL da tabela cirurgia, do mutirão cirúrgico (evento que
+// agrupa várias cirurgias) e do compartilhamento de cursos (outros
+// alunos vinculados a uma cirurgia).
 
 const pool = require('../config/database');
 

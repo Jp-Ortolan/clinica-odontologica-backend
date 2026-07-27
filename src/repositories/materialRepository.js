@@ -1,5 +1,4 @@
-// Repository: material
-// Responsável por todas as queries SQL da tabela material
+// Queries SQL da tabela material.
 
 const pool = require('../config/database');
 

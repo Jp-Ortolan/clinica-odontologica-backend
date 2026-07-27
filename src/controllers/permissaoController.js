@@ -1,7 +1,5 @@
-// Controller: permissões
-// Expõe a matriz de permissões (config/permissoes.js) para a tela
-// administrativa "Permissões" do protótipo.
-
+// Mostra o que cada perfil pode fazer no sistema — usado pela tela
+// "Permissões" do protótipo.
 const { obterMatriz, obterPorPerfil } = require('../config/permissoes');
 
 async function listar(req, res, next) {

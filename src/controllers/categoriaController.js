@@ -1,6 +1,3 @@
-// Controller: categoria
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const categoriaService = require('../services/categoriaService');
 
 async function listar(req, res, next) {

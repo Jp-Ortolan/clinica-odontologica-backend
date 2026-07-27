@@ -1,5 +1,5 @@
-// Validações de campos do módulo de estoque (material e movimentação).
-// Centraliza as regras usadas pelos services — card "Validações campos".
+// Validações de campos do módulo de estoque (material e movimentação),
+// centralizadas aqui para os services reaproveitarem.
 
 function ehInteiroValido(valor) {
   if (valor === undefined || valor === null) return false;

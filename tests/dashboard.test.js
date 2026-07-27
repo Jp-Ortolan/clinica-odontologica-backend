@@ -1,4 +1,4 @@
-// Testes: GET /api/dashboard/resumo (Sprint 5 — telas de Dashboard)
+// Testes: GET /api/dashboard/resumo
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');

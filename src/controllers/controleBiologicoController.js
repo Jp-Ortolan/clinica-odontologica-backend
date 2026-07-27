@@ -1,4 +1,3 @@
-// Controller: controle_biologico
 const controleBiologicoService = require('../services/controleBiologicoService');
 
 async function listarPorCiclo(req, res, next) {

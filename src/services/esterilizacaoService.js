@@ -1,5 +1,4 @@
-// Service: esterilizacao
-// Regras de negócio — ciclos, pacotes e controle biológico.
+// Regras dos ciclos de esterilização, pacotes e controle biológico.
 
 const esterilizacaoRepository = require('../repositories/esterilizacaoRepository');
 const { gerarQRCode } = require('../utils/qrcode');

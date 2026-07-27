@@ -1,6 +1,3 @@
-// Controller: movimentacao
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const movimentacaoService = require('../services/movimentacaoService');
 
 async function listar(req, res, next) {

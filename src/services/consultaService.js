@@ -1,13 +1,11 @@
-// Service: consulta
-// Contém as regras de negócio do módulo de consultas (agenda)
+// Regras da agenda de consultas.
 
 const consultaRepository = require('../repositories/consultaRepository');
 const pacienteRepository = require('../repositories/pacienteRepository');
 const auditLogger = require('../utils/auditLogger');
 
-// Ampliado para cobrir os estados desenhados no protótipo (telas
-// "Confirmações pendentes", "Confirmados", "Pacientes aguardando",
-// "Pacientes em atendimento" e "Faltas"), além do fluxo original.
+// Cobre os estados do protótipo: confirmações pendentes, confirmadas,
+// paciente aguardando, em atendimento e faltas.
 const STATUS_VALIDOS = [
   'agendada', 'confirmada', 'aguardando', 'em_atendimento',
   'realizada', 'cancelada', 'faltou',

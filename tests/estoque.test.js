@@ -1,7 +1,7 @@
-// Testes: módulo de Estoque (categoria + material + movimentação)
-// Card "Testes estoque" do cronograma. Mesma estratégia de tests/pacientes.test.js:
-// Supertest chamando a API de ponta a ponta, com os repositórios mockados
-// para não depender de um banco de dados real.
+// Testes: módulo de Estoque (categoria + material + movimentação).
+// Mesma estratégia de tests/pacientes.test.js: Supertest chamando a API
+// de ponta a ponta, com os repositórios mockados para não depender de
+// um banco de dados real.
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -357,7 +357,7 @@ describe('POST /api/movimentacoes', () => {
     expect(movimentacaoRepository.criar).toHaveBeenCalledWith(
       expect.objectContaining({ material_id: 1, tipo: 'entrada', quantidade: 5 })
     );
-    // delta positivo para entrada (RN-EST-01)
+    // delta positivo para entrada
     expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, 5);
   });
 
@@ -372,7 +372,7 @@ describe('POST /api/movimentacoes', () => {
       .send({ material_id: 1, tipo: 'saida', quantidade: 3 });
 
     expect(res.status).toBe(201);
-    // delta negativo para saída (RN-EST-02)
+    // delta negativo para saída
     expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, -3);
   });
 });

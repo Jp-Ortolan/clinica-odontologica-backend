@@ -1,6 +1,3 @@
-// Controller: consulta
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const consultaService = require('../services/consultaService');
 
 async function listar(req, res, next) {

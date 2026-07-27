@@ -1,5 +1,4 @@
-// Repository: movimentacao
-// Responsável por todas as queries SQL da tabela movimentacao_estoque
+// Queries SQL da tabela movimentacao_estoque.
 
 const pool = require('../config/database');
 

@@ -1,17 +1,9 @@
--- ============================================================
--- Migration 003 — Sprint 1: Módulo de Estoque
--- (categorias, novos campos de material e regras de validação)
---
--- Baseado na prototipação das telas:
---   "Controle de Estoque" (resumo por categoria)
---   "Detalhes do material" (campos do cadastro)
--- ============================================================
+-- Módulo de estoque: categorias, novos campos de material e validações.
 
 -- 1. Categorias de material
--- A prototipação mostra um conjunto fixo de 5 categorias usadas
--- nos dashboards de estoque, mas a equipe pode precisar cadastrar
--- novas no futuro — por isso vira tabela própria com CRUD (card
--- "API categorias"), em vez de um ENUM fixo no banco.
+-- Começa com 5 categorias fixas, mas vira tabela própria com CRUD
+-- (em vez de um ENUM fixo no banco) porque a equipe pode precisar
+-- cadastrar novas categorias no futuro.
 CREATE TABLE IF NOT EXISTS categoria (
     id   SERIAL PRIMARY KEY,
     nome VARCHAR NOT NULL UNIQUE
@@ -25,7 +17,7 @@ INSERT INTO categoria (nome) VALUES
     ('Kits cirúrgicos')
 ON CONFLICT (nome) DO NOTHING;
 
--- 2. Novos campos em material — tela "Detalhes do material"
+-- 2. Novos campos do cadastro de material
 ALTER TABLE material
     ADD COLUMN IF NOT EXISTS categoria_id    INTEGER REFERENCES categoria(id),
     ADD COLUMN IF NOT EXISTS estoque_ideal   INTEGER,
@@ -36,12 +28,10 @@ ALTER TABLE material
     ADD COLUMN IF NOT EXISTS validade        DATE;
 
 -- Migra valores antigos da coluna 'categoria' (texto livre) para a nova
--- categoria_id, quando o texto bater com algum nome cadastrado.
--- A referência a m.categoria só é válida enquanto a coluna antiga ainda
--- existir — por isso vai dentro de EXECUTE, que só é interpretado (e a
--- coluna só é checada) se a condição abaixo for verdadeira. Sem isso, um
--- banco em que essa migration já rodou (e a coluna já foi removida) trava
--- com "coluna categoria não existe" ao tentar reaplicar a migration.
+-- categoria_id, quando o texto bater com algum nome cadastrado. Fica
+-- dentro de um EXECUTE porque a coluna antiga pode já ter sido removida
+-- numa execução anterior — sem isso, reaplicar a migration quebraria
+-- com "coluna categoria não existe".
 DO $$ BEGIN
     IF EXISTS (
         SELECT 1 FROM information_schema.columns
@@ -61,8 +51,7 @@ END $$;
 -- A coluna antiga de categoria (texto livre) é substituída por categoria_id.
 ALTER TABLE material DROP COLUMN IF EXISTS categoria;
 
--- 3. Regra de negócio: estoque ideal, quando informado, não pode ser
--- menor que o estoque mínimo (não faria sentido na tela de detalhes).
+-- 3. Estoque ideal, quando informado, não pode ser menor que o mínimo.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_material_estoque_ideal') THEN
         ALTER TABLE material ADD CONSTRAINT chk_material_estoque_ideal

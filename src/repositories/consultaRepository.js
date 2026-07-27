@@ -1,5 +1,4 @@
-// Repository: consulta
-// Responsável por todas as queries SQL da tabela consulta
+// Queries SQL da tabela consulta.
 
 const pool = require('../config/database');
 

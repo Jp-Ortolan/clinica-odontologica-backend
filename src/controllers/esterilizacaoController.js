@@ -1,6 +1,3 @@
-// Controller: esterilizacao
-// Recebe req/res, delega ao service.
-
 const esterilizacaoService = require('../services/esterilizacaoService');
 
 async function listar(req, res, next) {

@@ -1,19 +1,13 @@
-// Matriz de permissões — reflete o que já está codificado nos middlewares
-// `autorizar(...)` de cada arquivo de rotas.
+// Lista, em um lugar só, o que cada perfil pode fazer em cada módulo — é a
+// mesma coisa que já está escrita nas rotas (via `autorizar(...)`), só que
+// aqui dá pra consultar tudo de uma vez, sem abrir arquivo por arquivo.
 //
-// IMPORTANTE (decisão de arquitetura, não pendência): o controle de acesso
-// em si continua sendo aplicado pelo middleware `perfil.js` em cada rota —
-// é rápido, testável e não depende do banco estar no ar para bloquear uma
-// requisição. Migrar isso para permissões 100% dinâmicas em tabela exigiria
-// reescrever esse middleware e re-testar as 169 chamadas de rota já
-// cobertas por teste, o que é arriscado perto do prazo. Este módulo serve
-// para dar à tela "Permissões" do protótipo uma fonte única e centralizada
-// para *consultar* o que cada perfil pode fazer, sem duplicar informação
-// desatualizável espalhada pelos arquivos de rota.
-//
-// Se no futuro quiser permissões editáveis pelo admin, o próximo passo é
-// criar uma tabela `permissao` e trocar `perfis` abaixo por uma consulta
-// a ela — a rota GET /api/permissoes não muda de formato.
+// Quem realmente bloqueia o acesso continua sendo o middleware `perfil.js`
+// em cada rota. Deixamos assim de propósito: é rápido e não depende do
+// banco estar no ar pra recusar uma requisição. Se um dia quiser deixar as
+// permissões editáveis por um admin, o caminho é criar uma tabela
+// `permissao` e trocar a lista `MATRIZ` abaixo por uma consulta a ela — o
+// endpoint GET /api/permissoes continua funcionando do mesmo jeito.
 
 const MATRIZ = [
   { modulo: 'usuarios', descricao: 'Gestão de usuários do sistema', perfis: { listar: ['professor', 'recepcionista'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },

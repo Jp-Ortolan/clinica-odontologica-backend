@@ -1,7 +1,6 @@
-// Service: log/auditoria
-// Lê o arquivo de auditoria já gerado pelo Winston (src/utils/auditLogger.js)
-// e devolve os eventos mais recentes por API — antes disso, os logs só
-// existiam em arquivo (logs/audit.log), sem nenhuma rota para consultá-los.
+// Lê o arquivo de auditoria (logs/audit.log, gerado pelo Winston) e
+// devolve os eventos mais recentes por API — antes só dava pra ver
+// abrindo o arquivo direto.
 
 const fs = require('fs');
 const path = require('path');

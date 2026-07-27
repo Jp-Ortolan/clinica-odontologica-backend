@@ -1,4 +1,3 @@
-// Controller: dashboard
 const dashboardService = require('../services/dashboardService');
 const relatorioService = require('../services/relatorioService');
 
@@ -11,7 +10,7 @@ async function obterResumo(req, res, next) {
   }
 }
 
-// Relatório em PDF com os mesmos indicadores do resumo (Sprint 5 — "Estatísticas+PDF")
+// Mesmos números do resumo, só que formatados em PDF pra imprimir/anexar.
 async function gerarRelatorioPDF(req, res, next) {
   try {
     const pdfBuffer = await relatorioService.gerarRelatorioPDF(req.user.perfil);

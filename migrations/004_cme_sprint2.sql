@@ -1,8 +1,5 @@
--- ============================================================
--- Migration 004 — CME Sprint 2 (Central de Material e Esterilização)
--- Expande o módulo de esterilização com dados de ciclo autoclave
+-- Expande o módulo de esterilização com dados do ciclo de autoclave
 -- e controle biológico / Bowie-Dick.
--- ============================================================
 
 -- 1. Adiciona colunas de ciclo à tabela esterilizacao existente
 --    (IF NOT EXISTS para ser idempotente)

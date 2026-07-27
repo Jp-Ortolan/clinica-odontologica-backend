@@ -1,6 +1,3 @@
-// Controller: paciente
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const pacienteService = require('../services/pacienteService');
 
 async function listar(req, res, next) {

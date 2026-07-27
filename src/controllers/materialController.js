@@ -1,6 +1,3 @@
-// Controller: material
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const materialService = require('../services/materialService');
 
 async function listar(req, res, next) {

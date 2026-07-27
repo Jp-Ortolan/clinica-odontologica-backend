@@ -1,17 +1,12 @@
--- ============================================================
--- Migration 005 — Cobertura de telas do protótipo (Figma)
--- Adiciona o que faltava no banco para os fluxos já desenhados
--- pelo time de UX/UI: status ativo/inativo do paciente, documentos,
--- evolução clínica, mutirão cirúrgico, compartilhamento de cursos,
--- e suporte a recuperação de senha.
--- ============================================================
+-- Adiciona o que faltava no banco: status ativo/inativo do paciente,
+-- documentos, evolução clínica, mutirão cirúrgico, compartilhamento
+-- de cursos e recuperação de senha.
 
 -- 1. Paciente ativo/inativo (telas "Pacientes Ativos" / "Pacientes Inativos")
 ALTER TABLE paciente
     ADD COLUMN IF NOT EXISTS ativo BOOLEAN NOT NULL DEFAULT TRUE;
 
--- 2. Documentos do paciente (upload/download — tabela citada no README
---    desde a Fase 2 mas nunca criada)
+-- 2. Documentos do paciente (upload/download)
 CREATE TABLE IF NOT EXISTS documento_paciente (
     id             SERIAL PRIMARY KEY,
     paciente_id    INTEGER NOT NULL REFERENCES paciente(id) ON DELETE CASCADE,

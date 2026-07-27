@@ -1,11 +1,10 @@
-// Middleware: perfil
-// Restringe o acesso a rotas com base no perfil do usuário autenticado.
-// DEVE ser usado DEPOIS do middleware de autenticação (auth.js),
-// pois depende do req.user preenchido pelo JWT.
-
-// Perfis disponíveis no sistema:
-// - professor     → acesso total (cadastro de usuários, gestão geral)
-// - aluno         → consultas e cirurgias sob supervisão, estoque (visualização)
+// Libera ou bloqueia uma rota de acordo com o perfil de quem está logado.
+// Só funciona depois do middleware de autenticação (auth.js), porque
+// precisa do req.user que ele preenche a partir do token.
+//
+// Perfis do sistema:
+// - professor     → acesso total
+// - aluno         → consultas e cirurgias sob supervisão, estoque (só visualizar)
 // - recepcionista → agendamento e cadastro de pacientes
 
 function autorizar(...perfisPermitidos) {

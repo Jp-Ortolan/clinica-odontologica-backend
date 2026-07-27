@@ -1,6 +1,5 @@
-// Service: paciente
-// Contém as regras de negócio do módulo de pacientes e das
-// tabelas satélite (alergias, medicamentos, documentos, evolução).
+// Regras de pacientes e das informações relacionadas: alergias,
+// medicamentos, documentos e evolução clínica.
 
 const pacienteRepository = require('../repositories/pacienteRepository');
 const viaCep = require('../utils/viaCep');

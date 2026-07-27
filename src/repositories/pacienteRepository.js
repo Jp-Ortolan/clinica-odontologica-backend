@@ -1,6 +1,5 @@
-// Repository: paciente
-// Responsável por todas as queries SQL da tabela paciente e das
-// tabelas satélite (alergias, medicamentos, documentos, evolução).
+// Queries SQL da tabela paciente e das tabelas relacionadas: alergias,
+// medicamentos, documentos e evolução.
 
 const pool = require('../config/database');
 

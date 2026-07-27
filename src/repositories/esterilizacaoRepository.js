@@ -1,5 +1,5 @@
-// Repository: esterilizacao + pacote_esterilizado
-// Acesso direto ao banco — sem lógica de negócio aqui.
+// Queries SQL de esterilização e pacote esterilizado — só acesso ao
+// banco, sem regra de negócio aqui.
 
 const pool = require('../config/database');
 

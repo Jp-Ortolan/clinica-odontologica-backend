@@ -1,20 +1,18 @@
--- Migration 002 — Ajustes de modelagem (revisão Fase 3)
+-- Ajustes de modelagem: novas colunas e constraints de validação.
 
 ALTER TABLE paciente
     ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
 
 -- Postgres não tem "ADD CONSTRAINT IF NOT EXISTS", então cada constraint
--- abaixo é adicionada dentro de um bloco que primeiro confere se ela já
--- existe em pg_constraint — assim a migration pode ser reaplicada sem erro
--- num banco que já tenha essas constraints (ex.: schema criado manualmente
--- antes deste script de migration existir).
+-- abaixo confere antes se já existe em pg_constraint — assim a migration
+-- pode ser reaplicada sem erro num banco que já tenha essas constraints.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_material_codigo_barras') THEN
         ALTER TABLE material ADD CONSTRAINT uq_material_codigo_barras UNIQUE (codigo_barras);
     END IF;
 END $$;
 
--- RN-EST-02: estoque nunca pode ficar negativo.
+-- O estoque nunca pode ficar negativo.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_material_quantidade_nao_negativa') THEN
         ALTER TABLE material ADD CONSTRAINT chk_material_quantidade_nao_negativa CHECK (quantidade >= 0);
@@ -28,8 +26,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
--- RN-USR-04: perfis válidos do sistema.
--- Definição alinhada com a equipe de UX/UI e com a prototipação: apenas 3 perfis.
+-- Perfis válidos do sistema: apenas estes 3.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_usuario_perfil') THEN
         ALTER TABLE usuario ADD CONSTRAINT chk_usuario_perfil
@@ -37,7 +34,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
---  fluxo de status de consulta.
+-- Status possíveis de uma consulta.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_consulta_status') THEN
         ALTER TABLE consulta ADD CONSTRAINT chk_consulta_status
@@ -45,7 +42,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
---  mesmo fluxo para cirurgias.
+-- Mesmos status, agora para cirurgias.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_cirurgia_status') THEN
         ALTER TABLE cirurgia ADD CONSTRAINT chk_cirurgia_status
@@ -61,7 +58,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
---  resultado do ciclo de esterilização.
+-- Resultados possíveis do ciclo de esterilização.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_esterilizacao_resultado') THEN
         ALTER TABLE esterilizacao ADD CONSTRAINT chk_esterilizacao_resultado
@@ -69,7 +66,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
---  fluxo de status do pacote esterilizado.
+-- Status possíveis do pacote esterilizado.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_pacote_status') THEN
         ALTER TABLE pacote_esterilizado ADD CONSTRAINT chk_pacote_status
@@ -97,8 +94,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
--- Nova entidade: documentos do paciente (exames, radiografias, formulários)
--- Tela "Documentos do paciente" na prototipação.
+-- Documentos do paciente: exames, radiografias, formulários.
 CREATE TABLE IF NOT EXISTS documento_paciente (
     id          SERIAL        PRIMARY KEY,
     paciente_id INT           NOT NULL,
@@ -114,9 +110,7 @@ CREATE TABLE IF NOT EXISTS documento_paciente (
 DROP TABLE IF EXISTS alergia_paciente;
 DROP TABLE IF EXISTS medicamento_paciente;
 
---  agenda organizada por
--- disciplina/especialidade odontológica.
--- ============================================================
+-- Agenda organizada por disciplina/especialidade odontológica.
 
 ALTER TABLE consulta
     ADD COLUMN IF NOT EXISTS disciplina VARCHAR(50);

@@ -1,6 +1,6 @@
-// Testes: validações de campos do módulo de estoque (src/utils/validacoesEstoque.js)
-// Card "Testes validação" do cronograma. São funções puras — testadas diretamente,
-// sem necessidade de mockar repositório, banco ou subir a API.
+// Testes: validações de campos do módulo de estoque
+// (src/utils/validacoesEstoque.js). São funções puras — testadas
+// diretamente, sem precisar mockar repositório, banco ou subir a API.
 
 const {
   ehInteiroValido,

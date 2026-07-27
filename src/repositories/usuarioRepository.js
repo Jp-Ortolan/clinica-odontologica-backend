@@ -1,5 +1,4 @@
-// Repository: usuario
-// Queries SQL ao banco
+// Ainda não tem nada aqui — é onde as queries de usuário vão entrar.
 
 const pool = require('../config/database');
 

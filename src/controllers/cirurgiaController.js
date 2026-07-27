@@ -1,6 +1,3 @@
-// Controller: cirurgia
-// Recebe req/res, valida os dados básicos e delega ao service
-
 const cirurgiaService = require('../services/cirurgiaService');
 
 async function listar(req, res, next) {

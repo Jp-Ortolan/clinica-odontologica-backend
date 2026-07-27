@@ -1,5 +1,4 @@
-// Repository: auth
-// Queries SQL relacionadas à autenticação
+// Queries SQL relacionadas à autenticação.
 
 const pool = require('../config/database');
 

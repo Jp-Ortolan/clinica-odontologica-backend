@@ -1,6 +1,4 @@
-// Controller: usuario
-// Recebe req/res e delega ao service
-// TODO: implementar CRUD completo de usuários
+// Ainda falta o CRUD completo de usuários — por enquanto só isso mesmo.
 
 async function listar(req, res) {
   res.status(501).json({ message: 'Não implementado ainda' });

@@ -1,6 +1,5 @@
-// Service: cirurgia
-// Contém as regras de negócio do módulo de cirurgias, mutirão
-// cirúrgico e compartilhamento de cursos (alunos vinculados).
+// Regras de cirurgias, mutirão cirúrgico e compartilhamento de cursos
+// (mais de um aluno vinculado à mesma cirurgia).
 
 const cirurgiaRepository = require('../repositories/cirurgiaRepository');
 const pacienteRepository = require('../repositories/pacienteRepository');

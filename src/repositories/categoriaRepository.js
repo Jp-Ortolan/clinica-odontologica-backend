@@ -1,5 +1,4 @@
-// Repository: categoria
-// Responsável por todas as queries SQL da tabela categoria
+// Queries SQL da tabela categoria.
 
 const pool = require('../config/database');
 

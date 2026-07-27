@@ -1,4 +1,3 @@
-// Controller: log/auditoria
 const logService = require('../services/logService');
 
 async function listarAuditoria(req, res, next) {

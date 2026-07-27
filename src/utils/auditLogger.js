@@ -1,13 +1,6 @@
-// auditLogger.js — Logs de negócio/auditoria (Winston)
-// Registra eventos importantes da aplicação em arquivo e console.
-//
-// Diferente do logger.js (Morgan, que loga requisições HTTP),
-// este captura eventos de negócio: ciclos criados, estoques críticos,
-// controles reprovados, etc.
-//
-// Arquivos de log gerados em logs/:
-//   - logs/audit.log   → todos os eventos de auditoria
-//   - logs/error.log   → apenas erros
+// Logs de eventos de negócio (ciclos criados, estoque crítico, controles
+// reprovados etc.), diferente do logger.js que só loga requisições HTTP.
+// Grava em logs/audit.log (tudo) e logs/error.log (só erros).
 
 const { createLogger, format, transports } = require('winston');
 const path = require('path');

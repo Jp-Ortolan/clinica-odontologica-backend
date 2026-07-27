@@ -1,6 +1,3 @@
-// Service: categoria
-// Contém as regras de negócio do módulo de categorias de material
-
 const categoriaRepository = require('../repositories/categoriaRepository');
 
 async function listar() {
