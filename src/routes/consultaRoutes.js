@@ -7,6 +7,10 @@ const autorizar = require('../middlewares/perfil');
 // GET /api/consultas → professor, aluno e recepcionista
 router.get('/', auth, autorizar('professor', 'aluno', 'recepcionista'), consultaController.listar);
 
+// GET /api/consultas/disciplinas → declarada ANTES de "/:id" para que
+// "disciplinas" não seja capturado como um id.
+router.get('/disciplinas', auth, consultaController.listarDisciplinas);
+
 // GET /api/consultas/:id → professor, aluno e recepcionista
 router.get('/:id', auth, autorizar('professor', 'aluno', 'recepcionista'), consultaController.buscarPorId);
 

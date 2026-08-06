@@ -20,9 +20,24 @@ const STATUS_VALIDOS = [
   'realizada', 'cancelada', 'faltou',
 ];
 
+// Disciplinas da clínica-escola. Precisa bater exatamente com a constraint
+// chk_consulta_disciplina (migration 012) — por isso o front busca esta
+// lista pela API (GET /consultas/disciplinas) em vez de repetir os nomes.
+const DISCIPLINAS_VALIDAS = [
+  'Dentística', 'Endodontia', 'Periodontia', 'Ortodontia',
+  'Odontopediatria', 'Cirurgia Bucal', 'Prótese', 'Reabilitação Bucal',
+];
+
+function listarDisciplinas() {
+  return DISCIPLINAS_VALIDAS;
+}
+
 async function listar(filtros = {}) {
   if (filtros.status && !STATUS_VALIDOS.includes(filtros.status)) {
     throw { status: 400, message: `Status inválido. Use um de: ${STATUS_VALIDOS.join(', ')}` };
+  }
+  if (filtros.disciplina && !DISCIPLINAS_VALIDAS.includes(filtros.disciplina)) {
+    throw { status: 400, message: `Disciplina inválida. Use uma de: ${DISCIPLINAS_VALIDAS.join(', ')}` };
   }
   return consultaRepository.listar(filtros);
 }
@@ -51,6 +66,11 @@ async function criar(dados) {
     throw { status: 400, message: `Status inválido. Use um de: ${STATUS_VALIDOS.join(', ')}` };
   }
 
+  // Regra: disciplina, se informada, precisa existir na lista da clínica
+  if (dados.disciplina && !DISCIPLINAS_VALIDAS.includes(dados.disciplina)) {
+    throw { status: 400, message: `Disciplina inválida. Use uma de: ${DISCIPLINAS_VALIDAS.join(', ')}` };
+  }
+
   // Regra: paciente precisa existir
   const paciente = await pacienteRepository.buscarPorId(paciente_id);
   if (!paciente) throw { status: 404, message: 'Paciente não encontrado' };
@@ -75,6 +95,10 @@ async function atualizar(id, dados) {
     throw { status: 400, message: `Status inválido. Use um de: ${STATUS_VALIDOS.join(', ')}` };
   }
 
+  if (dados.disciplina && !DISCIPLINAS_VALIDAS.includes(dados.disciplina)) {
+    throw { status: 400, message: `Disciplina inválida. Use uma de: ${DISCIPLINAS_VALIDAS.join(', ')}` };
+  }
+
   if (dados.paciente_id) {
     const paciente = await pacienteRepository.buscarPorId(dados.paciente_id);
     if (!paciente) throw { status: 404, message: 'Paciente não encontrado' };
@@ -87,6 +111,7 @@ async function atualizar(id, dados) {
     queixa_principal: dados.queixa_principal ?? consulta.queixa_principal,
     observacoes: dados.observacoes ?? consulta.observacoes,
     status: dados.status ?? consulta.status,
+    disciplina: dados.disciplina ?? consulta.disciplina,
   };
 
   const atualizada = await consultaRepository.atualizar(id, dadosAtualizados);
@@ -178,7 +203,8 @@ async function removerMaterial(consultaId, vinculoId) {
 }
 
 module.exports = {
-  listar, buscarPorId, criar, atualizar, deletar,
+  listar, buscarPorId, criar, atualizar, deletar, listarDisciplinas,
+  DISCIPLINAS_VALIDAS,
   listarMateriaisDaConsulta, adicionarMaterial,
   atualizarQuantidadeMaterial, removerMaterial,
 };

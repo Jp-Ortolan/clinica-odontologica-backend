@@ -7,6 +7,9 @@ const materialRepository = require('../repositories/materialRepository');
 const auditLogger = require('../utils/auditLogger');
 // Regra de quem recebe cada aviso: utils/notificarEventos.js
 const eventos = require('../utils/notificarEventos');
+// Mesma lista usada em consultas — importada em vez de repetida, pra não
+// divergir da constraint do banco.
+const { DISCIPLINAS_VALIDAS } = require('./consultaService');
 
 function formatarDataHora(valor) {
   const data = new Date(valor);
@@ -43,6 +46,9 @@ async function criar(dados) {
   }
   if (dados.status && !STATUS_VALIDOS.includes(dados.status)) {
     throw { status: 400, message: `Status inválido. Use um de: ${STATUS_VALIDOS.join(', ')}` };
+  }
+  if (dados.disciplina && !DISCIPLINAS_VALIDAS.includes(dados.disciplina)) {
+    throw { status: 400, message: `Disciplina inválida. Use uma de: ${DISCIPLINAS_VALIDAS.join(', ')}` };
   }
 
   const paciente = await pacienteRepository.buscarPorId(paciente_id);

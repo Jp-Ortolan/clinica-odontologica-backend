@@ -36,24 +36,25 @@ async function buscarPorId(id) {
 }
 
 async function criar(dados) {
-  const { paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id } = dados;
+  const { paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id, disciplina } = dados;
   const result = await pool.query(
-    `INSERT INTO cirurgia (paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id)
-     VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'agendada'), $7)
+    `INSERT INTO cirurgia (paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id, disciplina)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'agendada'), $7, $8)
      RETURNING *`,
-    [paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id || null]
+    [paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id || null, disciplina ?? null]
   );
   return result.rows[0];
 }
 
 async function atualizar(id, dados) {
-  const { paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id } = dados;
+  const { paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id, disciplina } = dados;
   const result = await pool.query(
     `UPDATE cirurgia
-     SET paciente_id = $1, usuario_id = $2, data_hora = $3, tipo_cirurgia = $4, observacoes = $5, status = $6, mutirao_id = $7
-     WHERE id = $8
+     SET paciente_id = $1, usuario_id = $2, data_hora = $3, tipo_cirurgia = $4,
+         observacoes = $5, status = $6, mutirao_id = $7, disciplina = $8
+     WHERE id = $9
      RETURNING *`,
-    [paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id || null, id]
+    [paciente_id, usuario_id, data_hora, tipo_cirurgia, observacoes, status, mutirao_id || null, disciplina ?? null, id]
   );
   return result.rows[0] || null;
 }

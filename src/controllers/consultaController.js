@@ -4,8 +4,20 @@ async function listar(req, res, next) {
   try {
     const filtros = {};
     if (req.query.status) filtros.status = req.query.status;
+    if (req.query.disciplina) filtros.disciplina = req.query.disciplina;
     const consultas = await consultaService.listar(filtros);
     res.status(200).json(consultas);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/consultas/disciplinas → lista fixa da clínica-escola.
+// Existe para o front não precisar repetir os nomes (foi assim que os
+// tipos de ciclo do CME acabaram divergindo do backend).
+async function listarDisciplinas(req, res, next) {
+  try {
+    res.status(200).json(consultaService.listarDisciplinas());
   } catch (err) {
     next(err);
   }
@@ -93,6 +105,6 @@ async function removerMaterial(req, res, next) {
 }
 
 module.exports = {
-  listar, buscarPorId, criar, atualizar, deletar,
+  listar, buscarPorId, criar, atualizar, deletar, listarDisciplinas,
   listarMateriais, adicionarMaterial, atualizarQuantidadeMaterial, removerMaterial,
 };
