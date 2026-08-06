@@ -58,4 +58,70 @@ async function deletar(id) {
   return result.rows[0] || null;
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar };
+// ── Materiais previstos da consulta (tabela consulta_material) ──────────
+// Mesmo desenho já usado em cirurgia_material (migration 006).
+
+async function listarMateriaisDaConsulta(consultaId) {
+  const result = await pool.query(
+    `SELECT cm.*, m.nome AS material_nome, m.codigo_barras, m.unidade_medida
+     FROM consulta_material cm
+     JOIN material m ON m.id = cm.material_id
+     WHERE cm.consulta_id = $1
+     ORDER BY cm.id ASC`,
+    [consultaId]
+  );
+  return result.rows;
+}
+
+async function buscarMaterialDaConsultaPorId(id) {
+  const result = await pool.query(
+    `SELECT cm.*, m.nome AS material_nome, m.codigo_barras, m.unidade_medida
+     FROM consulta_material cm
+     JOIN material m ON m.id = cm.material_id
+     WHERE cm.id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+async function buscarVinculoPorConsultaEMaterial(consultaId, materialId) {
+  const result = await pool.query(
+    'SELECT * FROM consulta_material WHERE consulta_id = $1 AND material_id = $2',
+    [consultaId, materialId]
+  );
+  return result.rows[0] || null;
+}
+
+async function adicionarMaterial(consultaId, dados) {
+  const { material_id, quantidade } = dados;
+  const result = await pool.query(
+    `INSERT INTO consulta_material (consulta_id, material_id, quantidade)
+     VALUES ($1, $2, COALESCE($3, 1)) RETURNING id`,
+    [consultaId, material_id, quantidade]
+  );
+  return buscarMaterialDaConsultaPorId(result.rows[0].id);
+}
+
+async function atualizarQuantidadeMaterial(id, quantidade) {
+  const result = await pool.query(
+    'UPDATE consulta_material SET quantidade = $1 WHERE id = $2 RETURNING id',
+    [quantidade, id]
+  );
+  if (!result.rows[0]) return null;
+  return buscarMaterialDaConsultaPorId(id);
+}
+
+async function removerMaterial(id) {
+  const result = await pool.query(
+    'DELETE FROM consulta_material WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = {
+  listar, buscarPorId, criar, atualizar, deletar,
+  listarMateriaisDaConsulta, buscarMaterialDaConsultaPorId,
+  buscarVinculoPorConsultaEMaterial,
+  adicionarMaterial, atualizarQuantidadeMaterial, removerMaterial,
+};

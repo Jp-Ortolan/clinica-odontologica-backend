@@ -14,7 +14,7 @@ const MATRIZ = [
   { modulo: 'pacientes', descricao: 'Cadastro e prontuário de pacientes', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'recepcionista'], editar: ['professor', 'recepcionista'], remover: ['professor'] } },
   { modulo: 'pacientes.documentos', descricao: 'Upload/download de documentos do paciente', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'recepcionista'], remover: ['professor'] } },
   { modulo: 'pacientes.evolucao', descricao: 'Prontuário / evolução clínica', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'] } },
-  { modulo: 'consultas', descricao: 'Agenda de consultas', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
+  { modulo: 'consultas', descricao: 'Agenda de consultas', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'aluno', 'recepcionista'], editar: ['professor', 'aluno', 'recepcionista'], remover: ['professor'] } },
   { modulo: 'cirurgias', descricao: 'Agenda de cirurgias', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
   { modulo: 'cirurgias.mutiroes', descricao: 'Mutirões cirúrgicos', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },
   { modulo: 'cirurgias.alunos', descricao: 'Compartilhamento de cursos (alunos vinculados)', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], remover: ['professor'] } },
@@ -22,6 +22,7 @@ const MATRIZ = [
   { modulo: 'categorias', descricao: 'Categorias de material', perfis: { listar: ['professor', 'aluno'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },
   { modulo: 'movimentacoes', descricao: 'Entradas/saídas de estoque', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'], remover: ['professor'] } },
   { modulo: 'esterilizacoes', descricao: 'Ciclos de esterilização (CME)', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
+  { modulo: 'notificacoes', descricao: 'Notificações do usuário', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], editar: ['professor', 'aluno', 'recepcionista'], remover: ['professor', 'aluno', 'recepcionista'] } },
   { modulo: 'logs', descricao: 'Logs e auditoria do sistema', perfis: { listar: ['professor'] } },
 ];
 

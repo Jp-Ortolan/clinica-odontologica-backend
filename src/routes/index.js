@@ -10,6 +10,7 @@ router.use('/materiais',      require('./materialRoutes'));
 router.use('/categorias',     require('./categoriaRoutes'));
 router.use('/movimentacoes',  require('./movimentacaoRoutes'));
 router.use('/esterilizacoes', require('./esterilizacaoRoutes'));
+router.use('/notificacoes',   require('./notificacaoRoutes'));
 router.use('/logs',           require('./logRoutes'));
 router.use('/permissoes',     require('./permissaoRoutes'));
 router.use('/dashboard',      require('./dashboardRoutes'));
