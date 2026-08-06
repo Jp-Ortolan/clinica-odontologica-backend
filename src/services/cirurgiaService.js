@@ -5,6 +5,14 @@ const cirurgiaRepository = require('../repositories/cirurgiaRepository');
 const pacienteRepository = require('../repositories/pacienteRepository');
 const materialRepository = require('../repositories/materialRepository');
 const auditLogger = require('../utils/auditLogger');
+// Regra de quem recebe cada aviso: utils/notificarEventos.js
+const eventos = require('../utils/notificarEventos');
+
+function formatarDataHora(valor) {
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
 
 const STATUS_VALIDOS = ['agendada', 'realizada', 'cancelada'];
 const PAPEIS_VALIDOS = ['executante', 'auxiliar', 'observador'];
@@ -47,6 +55,13 @@ async function criar(dados) {
 
   const cirurgia = await cirurgiaRepository.criar(dados);
   auditLogger.info('Cirurgia agendada', { cirurgia_id: cirurgia.id, paciente_id, usuario_id, tipo_cirurgia: dados.tipo_cirurgia });
+
+  await eventos.cirurgiaAgendada({
+    cirurgiaId: cirurgia.id,
+    pacienteNome: paciente.nome,
+    quandoFormatado: formatarDataHora(data_hora),
+  });
+
   return cirurgia;
 }
 
@@ -160,6 +175,18 @@ async function vincularAluno(cirurgiaId, dados) {
 
   const vinculo = await cirurgiaRepository.vincularAluno(cirurgiaId, dados);
   auditLogger.info('Aluno vinculado à cirurgia (compartilhamento de curso)', { cirurgia_id: cirurgiaId, usuario_id, curso: dados.curso });
+
+  // O aluno precisa saber que foi escalado.
+  const cirurgia = await cirurgiaRepository.buscarPorId(cirurgiaId);
+  const paciente = cirurgia?.paciente_id
+    ? await pacienteRepository.buscarPorId(cirurgia.paciente_id)
+    : null;
+  await eventos.alunoVinculadoACirurgia(usuario_id, {
+    cirurgiaId,
+    pacienteNome: paciente?.nome || 'Paciente',
+    quandoFormatado: formatarDataHora(cirurgia?.data_hora),
+  });
+
   return vinculo;
 }
 

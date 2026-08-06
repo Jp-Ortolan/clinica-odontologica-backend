@@ -72,14 +72,15 @@ async function criar(dados) {
     data_entrada,
     validade,
     imagem_base64,
+    descricao,
   } = dados;
 
   const result = await pool.query(
     `INSERT INTO material
        (nome, codigo_barras, categoria_id, unidade_medida, quantidade,
         estoque_minimo, estoque_ideal, fabricante, lote, registro_anvisa,
-        data_entrada, validade, imagem_base64)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        data_entrada, validade, imagem_base64, descricao)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING *`,
     [
       nome,
@@ -95,6 +96,7 @@ async function criar(dados) {
       data_entrada,
       validade,
       imagem_base64 ?? null,
+      descricao ?? null,
     ]
   );
   return buscarPorId(result.rows[0].id);
@@ -115,6 +117,7 @@ async function atualizar(id, dados) {
     data_entrada,
     validade,
     imagem_base64,
+    descricao,
   } = dados;
 
   const result = await pool.query(
@@ -122,8 +125,8 @@ async function atualizar(id, dados) {
      SET nome = $1, codigo_barras = $2, categoria_id = $3, unidade_medida = $4,
          quantidade = $5, estoque_minimo = $6, estoque_ideal = $7, fabricante = $8,
          lote = $9, registro_anvisa = $10, data_entrada = $11, validade = $12,
-         imagem_base64 = $13
-     WHERE id = $14
+         imagem_base64 = $13, descricao = $14
+     WHERE id = $15
      RETURNING id`,
     [
       nome,
@@ -139,6 +142,7 @@ async function atualizar(id, dados) {
       data_entrada,
       validade,
       imagem_base64 ?? null,
+      descricao ?? null,
       id,
     ]
   );

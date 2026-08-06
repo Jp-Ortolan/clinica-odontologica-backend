@@ -99,6 +99,7 @@ async function criar(dados) {
     data_entrada: dados.data_entrada ?? null,
     validade: dados.validade ?? null,
     imagem_base64: validarImagemBase64(dados.imagem_base64),
+    descricao: dados.descricao ?? null,
   });
 
   return comCamposCalculados(material);
@@ -124,6 +125,7 @@ async function atualizar(id, dados) {
     imagem_base64: dados.imagem_base64 !== undefined
       ? validarImagemBase64(dados.imagem_base64)
       : materialAtual.imagem_base64,
+    descricao: dados.descricao ?? materialAtual.descricao,
   };
 
   const erros = [

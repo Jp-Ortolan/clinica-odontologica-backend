@@ -3,6 +3,8 @@ const esterilizacaoRepository     = require('../repositories/esterilizacaoReposi
 
 const TIPOS_VALIDOS     = ['bowie_dick', 'biologico', 'quimico'];
 const RESULTADOS_VALIDOS = ['pendente', 'aprovado', 'reprovado'];
+// Regra de quem recebe cada aviso: utils/notificarEventos.js
+const eventos = require('../utils/notificarEventos');
 
 async function listarPorCiclo(esterilizacaoId) {
   const ciclo = await esterilizacaoRepository.buscarPorId(esterilizacaoId);
@@ -45,11 +47,20 @@ async function criar(esterilizacaoId, dados, usuarioId) {
     throw err;
   }
 
-  return controleBiologicoRepository.criar({
+  const registro = await controleBiologicoRepository.criar({
     ...dados,
     esterilizacao_id: esterilizacaoId,
     testado_por_id: usuarioId,
   });
+
+  // Controle biológico reprovado significa que a carga não esterilizou:
+  // professor e aluno precisam saber antes de usar os pacotes. A recepção
+  // não opera o CME, então fica de fora.
+  if (resultado === 'reprovado') {
+    await eventos.controleBiologicoPositivo(esterilizacaoId, resultado);
+  }
+
+  return registro;
 }
 
 async function atualizar(id, dados) {
@@ -64,7 +75,15 @@ async function atualizar(id, dados) {
     err.status = 400;
     throw err;
   }
-  return controleBiologicoRepository.atualizar(id, dados);
+  const atualizado = await controleBiologicoRepository.atualizar(id, dados);
+
+  // O teste costuma nascer "pendente" e só depois virar reprovado — é aqui
+  // que o alerta normalmente dispara.
+  if (dados.resultado === 'reprovado' && registro.resultado !== 'reprovado') {
+    await eventos.controleBiologicoPositivo(registro.esterilizacao_id, dados.resultado);
+  }
+
+  return atualizado;
 }
 
 async function deletar(id) {

@@ -45,12 +45,15 @@ async function buscarPorCpf(cpf) {
 }
 
 async function criar(dados) {
-  const { nome, cpf, email, senha_hash, telefone, setor, perfil, data_admissao } = dados;
+  const { nome, cpf, email, senha_hash, telefone, setor, perfil, data_admissao, ativo } = dados;
+  // "ativo" era fixo em true no INSERT: a tela de cadastro tinha um campo
+  // "Status" obrigatório que não surtia efeito nenhum — criar alguém já
+  // inativo era impossível.
   const result = await pool.query(
     `INSERT INTO usuario (nome, cpf, email, senha_hash, telefone, setor, perfil, data_admissao, ativo)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${COLUNAS_SEGURAS}`,
-    [nome, cpf, email, senha_hash, telefone ?? null, setor ?? null, perfil, data_admissao ?? null]
+    [nome, cpf, email, senha_hash, telefone ?? null, setor ?? null, perfil, data_admissao ?? null, ativo ?? true]
   );
   return result.rows[0];
 }

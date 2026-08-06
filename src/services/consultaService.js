@@ -3,27 +3,9 @@
 const consultaRepository = require('../repositories/consultaRepository');
 const pacienteRepository = require('../repositories/pacienteRepository');
 const materialRepository = require('../repositories/materialRepository');
-const notificacaoRepository = require('../repositories/notificacaoRepository');
 const auditLogger = require('../utils/auditLogger');
-
-// Avisa o profissional responsável sobre mudanças na agenda dele.
-// Envolvido em try/catch porque notificação é acessório: se falhar, o
-// agendamento em si não pode quebrar junto.
-async function notificarResponsavel(usuarioId, { titulo, mensagem, link, referencia_id }) {
-  if (!usuarioId) return;
-  try {
-    await notificacaoRepository.criar({
-      usuario_id: usuarioId,
-      titulo,
-      mensagem,
-      tipo: 'consulta',
-      link,
-      referencia_id,
-    });
-  } catch (err) {
-    auditLogger.warn('Falha ao criar notificação de consulta', { erro: err.message });
-  }
-}
+// Quem recebe cada notificação está definido em utils/notificarEventos.js.
+const eventos = require('../utils/notificarEventos');
 
 function formatarDataHora(valor) {
   const data = new Date(valor);
@@ -76,10 +58,10 @@ async function criar(dados) {
   const consulta = await consultaRepository.criar(dados);
   auditLogger.info('Consulta agendada', { consulta_id: consulta.id, paciente_id, usuario_id });
 
-  await notificarResponsavel(usuario_id, {
-    titulo: 'Nova consulta agendada',
-    mensagem: `${paciente.nome} — ${formatarDataHora(data_hora)}`,
-    referencia_id: consulta.id,
+  await eventos.consultaAgendada(usuario_id, {
+    pacienteNome: paciente.nome,
+    quandoFormatado: formatarDataHora(data_hora),
+    consultaId: consulta.id,
   });
 
   return consulta;
@@ -110,10 +92,9 @@ async function atualizar(id, dados) {
   const atualizada = await consultaRepository.atualizar(id, dadosAtualizados);
   if (dados.status === 'cancelada') {
     auditLogger.warn('Consulta cancelada', { consulta_id: id });
-    await notificarResponsavel(dadosAtualizados.usuario_id, {
-      titulo: 'Consulta cancelada',
-      mensagem: `Agendamento de ${formatarDataHora(dadosAtualizados.data_hora)} foi cancelado`,
-      referencia_id: id,
+    await eventos.consultaCancelada(dadosAtualizados.usuario_id, {
+      quandoFormatado: formatarDataHora(dadosAtualizados.data_hora),
+      consultaId: id,
     });
   } else if (dados.status === 'faltou') {
     auditLogger.warn('Falta registrada', { consulta_id: id });
@@ -121,10 +102,9 @@ async function atualizar(id, dados) {
     auditLogger.info('Consulta realizada', { consulta_id: id });
   } else if (dados.data_hora && dados.data_hora !== consulta.data_hora) {
     // Reagendamento: a data mudou sem que o status virasse cancelada.
-    await notificarResponsavel(dadosAtualizados.usuario_id, {
-      titulo: 'Consulta reagendada',
-      mensagem: `Novo horário: ${formatarDataHora(dadosAtualizados.data_hora)}`,
-      referencia_id: id,
+    await eventos.consultaReagendada(dadosAtualizados.usuario_id, {
+      quandoFormatado: formatarDataHora(dadosAtualizados.data_hora),
+      consultaId: id,
     });
   }
   return atualizada;

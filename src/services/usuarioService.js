@@ -46,6 +46,9 @@ async function criar(dados) {
     setor: dados.setor,
     perfil,
     data_admissao: dados.data_admissao,
+    // Permite cadastrar alguém já inativo (ex.: acesso que só começa depois).
+    // Se não vier nada, continua nascendo ativo como antes.
+    ativo: dados.ativo !== undefined ? dados.ativo : true,
   });
 }
 

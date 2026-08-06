@@ -3,6 +3,8 @@
 const movimentacaoRepository = require('../repositories/movimentacaoRepository');
 const materialRepository = require('../repositories/materialRepository');
 const { validarMovimentacao } = require('../utils/validacoesEstoque');
+// Regra de quem recebe cada aviso: utils/notificarEventos.js
+const eventos = require('../utils/notificarEventos');
 
 function calcularDelta(tipo, quantidade) {
   return tipo === 'entrada' ? Number(quantidade) : -Number(quantidade);
@@ -45,6 +47,18 @@ async function criar(dados, usuarioId) {
 
   const delta = calcularDelta(dados.tipo, quantidade);
   await materialRepository.ajustarQuantidade(dados.material_id, delta);
+
+  // Depois de mexer no estoque, verifica se o material cruzou o limite e
+  // avisa quem repõe (professor e aluno — a recepção não acessa estoque).
+  // Só notifica na descida: entrada que recompõe o estoque não gera aviso.
+  if (delta < 0) {
+    const atualizado = await materialRepository.buscarPorId(dados.material_id);
+    const estavaOk = material.quantidade > material.estoque_minimo;
+    const ficouBaixo = atualizado.quantidade <= atualizado.estoque_minimo;
+    if (estavaOk && ficouBaixo) {
+      await eventos.estoqueBaixo(atualizado);
+    }
+  }
 
   return movimentacao;
 }
