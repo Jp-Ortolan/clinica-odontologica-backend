@@ -36,4 +36,11 @@ router.get('/:id/alunos', auth, autorizar('professor', 'aluno', 'recepcionista')
 router.post('/:id/alunos', auth, autorizar('professor'), cirurgiaController.vincularAluno);
 router.delete('/:id/alunos/:vinculoId', auth, autorizar('professor'), cirurgiaController.desvincularAluno);
 
+// ── Materiais previstos (checklist real, persistido no banco) ──
+
+router.get('/:id/materiais', auth, autorizar('professor', 'aluno', 'recepcionista'), cirurgiaController.listarMateriaisDaCirurgia);
+router.post('/:id/materiais', auth, autorizar('professor', 'aluno'), cirurgiaController.adicionarMaterial);
+router.put('/:id/materiais/:materialVinculoId', auth, autorizar('professor', 'aluno'), cirurgiaController.atualizarQuantidadeMaterial);
+router.delete('/:id/materiais/:materialVinculoId', auth, autorizar('professor', 'aluno'), cirurgiaController.removerMaterial);
+
 module.exports = router;

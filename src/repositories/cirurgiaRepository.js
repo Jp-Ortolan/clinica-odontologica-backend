@@ -128,8 +128,67 @@ async function desvincularAluno(id) {
   return result.rows[0] || null;
 }
 
+// ── Materiais previstos para a cirurgia ─────────────────────
+
+async function listarMateriaisDaCirurgia(cirurgiaId) {
+  const result = await pool.query(
+    `SELECT cm.*, m.nome AS material_nome, m.codigo_barras, m.unidade_medida
+     FROM cirurgia_material cm
+     JOIN material m ON m.id = cm.material_id
+     WHERE cm.cirurgia_id = $1
+     ORDER BY cm.id ASC`,
+    [cirurgiaId]
+  );
+  return result.rows;
+}
+
+async function buscarMaterialDaCirurgiaPorId(id) {
+  const result = await pool.query(
+    `SELECT cm.*, m.nome AS material_nome, m.codigo_barras, m.unidade_medida
+     FROM cirurgia_material cm
+     JOIN material m ON m.id = cm.material_id
+     WHERE cm.id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+async function buscarVinculoPorCirurgiaEMaterial(cirurgiaId, materialId) {
+  const result = await pool.query(
+    'SELECT * FROM cirurgia_material WHERE cirurgia_id = $1 AND material_id = $2',
+    [cirurgiaId, materialId]
+  );
+  return result.rows[0] || null;
+}
+
+async function adicionarMaterial(cirurgiaId, dados) {
+  const { material_id, quantidade } = dados;
+  const result = await pool.query(
+    `INSERT INTO cirurgia_material (cirurgia_id, material_id, quantidade)
+     VALUES ($1, $2, COALESCE($3, 1)) RETURNING id`,
+    [cirurgiaId, material_id, quantidade]
+  );
+  return buscarMaterialDaCirurgiaPorId(result.rows[0].id);
+}
+
+async function atualizarQuantidadeMaterial(id, quantidade) {
+  const result = await pool.query(
+    'UPDATE cirurgia_material SET quantidade = $1 WHERE id = $2 RETURNING id',
+    [quantidade, id]
+  );
+  if (!result.rows[0]) return null;
+  return buscarMaterialDaCirurgiaPorId(id);
+}
+
+async function removerMaterial(id) {
+  const result = await pool.query('DELETE FROM cirurgia_material WHERE id = $1 RETURNING id', [id]);
+  return result.rows[0] || null;
+}
+
 module.exports = {
   listar, buscarPorId, criar, atualizar, deletar,
   listarMutiroes, buscarMutiraoPorId, criarMutirao, atualizarMutirao, deletarMutirao,
   listarAlunosDaCirurgia, vincularAluno, desvincularAluno,
+  listarMateriaisDaCirurgia, buscarMaterialDaCirurgiaPorId, buscarVinculoPorCirurgiaEMaterial,
+  adicionarMaterial, atualizarQuantidadeMaterial, removerMaterial,
 };

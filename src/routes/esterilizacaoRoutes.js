@@ -16,6 +16,10 @@ router.delete('/:id', auth, autorizar('professor'), c.deletar);
 router.get('/:id/pacotes',  auth, autorizar('professor', 'aluno'), c.listarPacotes);
 router.post('/:id/pacotes', auth, autorizar('professor', 'aluno'), c.criarPacote);
 
+// GET /esterilizacoes/pacotes/:pacoteId → busca um pacote isolado, sem
+// precisar saber o ciclo. Usado pelo leitor de QR-code do CME.
+router.get('/pacotes/:pacoteId', auth, autorizar('professor', 'aluno'), c.buscarPacotePorId);
+
 // ── QR Code e status do pacote ───────────────────────────────
 router.get('/pacotes/:pacoteId/qrcode',      auth, autorizar('professor', 'aluno'), c.obterQRCode);
 router.patch('/pacotes/:pacoteId/status',    auth, autorizar('professor', 'aluno'), c.atualizarStatusPacote);

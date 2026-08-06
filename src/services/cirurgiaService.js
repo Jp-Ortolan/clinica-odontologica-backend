@@ -3,6 +3,7 @@
 
 const cirurgiaRepository = require('../repositories/cirurgiaRepository');
 const pacienteRepository = require('../repositories/pacienteRepository');
+const materialRepository = require('../repositories/materialRepository');
 const auditLogger = require('../utils/auditLogger');
 
 const STATUS_VALIDOS = ['agendada', 'realizada', 'cancelada'];
@@ -168,8 +169,67 @@ async function desvincularAluno(id) {
   return { message: 'Aluno desvinculado da cirurgia com sucesso' };
 }
 
+// ── Materiais previstos para a cirurgia ─────────────────────
+// Checklist real (persistido), antes existia só localmente na tela.
+
+async function listarMateriaisDaCirurgia(cirurgiaId) {
+  await buscarPorId(cirurgiaId);
+  return cirurgiaRepository.listarMateriaisDaCirurgia(cirurgiaId);
+}
+
+async function adicionarMaterial(cirurgiaId, dados) {
+  await buscarPorId(cirurgiaId);
+
+  const { material_id, quantidade } = dados;
+  if (!material_id) throw { status: 400, message: 'material_id é obrigatório' };
+
+  const material = await materialRepository.buscarPorId(material_id);
+  if (!material) throw { status: 404, message: 'Material não encontrado' };
+
+  if (quantidade != null && Number(quantidade) < 0) {
+    throw { status: 400, message: 'Quantidade não pode ser negativa' };
+  }
+
+  const jaVinculado = await cirurgiaRepository.buscarVinculoPorCirurgiaEMaterial(cirurgiaId, material_id);
+  if (jaVinculado) {
+    throw { status: 409, message: 'Este material já está vinculado a esta cirurgia' };
+  }
+
+  const vinculo = await cirurgiaRepository.adicionarMaterial(cirurgiaId, { material_id, quantidade });
+  auditLogger.info('Material vinculado à cirurgia', { cirurgia_id: cirurgiaId, material_id, quantidade: vinculo.quantidade });
+  return vinculo;
+}
+
+async function atualizarQuantidadeMaterial(cirurgiaId, vinculoId, quantidade) {
+  await buscarPorId(cirurgiaId);
+
+  if (quantidade == null || Number(quantidade) < 0) {
+    throw { status: 400, message: 'Quantidade é obrigatória e não pode ser negativa' };
+  }
+
+  const vinculo = await cirurgiaRepository.buscarMaterialDaCirurgiaPorId(vinculoId);
+  if (!vinculo || vinculo.cirurgia_id !== Number(cirurgiaId)) {
+    throw { status: 404, message: 'Material não encontrado nesta cirurgia' };
+  }
+
+  return cirurgiaRepository.atualizarQuantidadeMaterial(vinculoId, quantidade);
+}
+
+async function removerMaterial(cirurgiaId, vinculoId) {
+  await buscarPorId(cirurgiaId);
+
+  const vinculo = await cirurgiaRepository.buscarMaterialDaCirurgiaPorId(vinculoId);
+  if (!vinculo || vinculo.cirurgia_id !== Number(cirurgiaId)) {
+    throw { status: 404, message: 'Material não encontrado nesta cirurgia' };
+  }
+
+  await cirurgiaRepository.removerMaterial(vinculoId);
+  return { message: 'Material removido do checklist da cirurgia' };
+}
+
 module.exports = {
   listar, buscarPorId, criar, atualizar, deletar,
   listarMutiroes, buscarMutiraoPorId, criarMutirao, atualizarMutirao, deletarMutirao, listarCirurgiasDoMutirao,
   listarAlunosDaCirurgia, vincularAluno, desvincularAluno,
+  listarMateriaisDaCirurgia, adicionarMaterial, atualizarQuantidadeMaterial, removerMaterial,
 };

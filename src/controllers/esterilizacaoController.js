@@ -51,6 +51,13 @@ async function criarPacote(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function buscarPacotePorId(req, res, next) {
+  try {
+    const pacote = await esterilizacaoService.buscarPacotePorId(req.params.pacoteId);
+    res.status(200).json(pacote);
+  } catch (err) { next(err); }
+}
+
 async function obterQRCode(req, res, next) {
   try {
     const resultado = await esterilizacaoService.obterQRCode(req.params.pacoteId);
@@ -67,5 +74,5 @@ async function atualizarStatusPacote(req, res, next) {
 
 module.exports = {
   listar, buscarPorId, criar, atualizar, deletar,
-  listarPacotes, criarPacote, obterQRCode, atualizarStatusPacote,
+  listarPacotes, criarPacote, buscarPacotePorId, obterQRCode, atualizarStatusPacote,
 };

@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const usuarioRepository = require('../repositories/usuarioRepository');
 
 async function login(req, res, next) {
   try {
@@ -36,4 +37,19 @@ async function redefinirSenha(req, res, next) {
   }
 }
 
-module.exports = { login, solicitarRecuperacaoSenha, redefinirSenha };
+// GET /api/auth/me — devolve os dados atuais do usuário do token (o
+// front usa isso pra validar a sessão ao carregar a página, em vez de
+// só confiar cegamente no que está salvo no localStorage).
+async function me(req, res, next) {
+  try {
+    const usuario = await usuarioRepository.buscarPorId(req.user.id);
+    if (!usuario) {
+      return res.status(401).json({ message: 'Usuário do token não existe mais' });
+    }
+    res.status(200).json(usuario);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { login, solicitarRecuperacaoSenha, redefinirSenha, me };

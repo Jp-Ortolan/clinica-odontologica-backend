@@ -129,6 +129,20 @@ async function criarPacote(esterilizacaoId, dados) {
   return esterilizacaoRepository.criarPacote({ ...dados, esterilizacao_id: esterilizacaoId, qr_code });
 }
 
+// GET /esterilizacoes/pacotes/:pacoteId — busca um pacote isolado, sem
+// precisar saber a qual ciclo ele pertence. Usado pelo leitor de QR-code
+// do CME: antes disso só dava pra chegar num pacote navegando pela lista
+// aninhada em /esterilizacoes/:id/pacotes.
+async function buscarPacotePorId(pacoteId) {
+  const pacote = await esterilizacaoRepository.buscarPacotePorId(pacoteId);
+  if (!pacote) {
+    const err = new Error('Pacote não encontrado');
+    err.status = 404;
+    throw err;
+  }
+  return pacote;
+}
+
 async function obterQRCode(pacoteId) {
   const pacote = await esterilizacaoRepository.buscarPacotePorId(pacoteId);
   if (!pacote) {
@@ -161,5 +175,5 @@ async function atualizarStatusPacote(pacoteId, status) {
 
 module.exports = {
   listar, buscarPorId, criar, atualizar, deletar,
-  listarPacotes, criarPacote, obterQRCode, atualizarStatusPacote,
+  listarPacotes, criarPacote, buscarPacotePorId, obterQRCode, atualizarStatusPacote,
 };

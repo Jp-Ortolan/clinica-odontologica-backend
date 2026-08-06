@@ -45,6 +45,22 @@ async function validarCategoria(categoriaId) {
   if (!categoria) throw { status: 400, message: 'Categoria informada não existe' };
 }
 
+// Foto do material é opcional, enviada como data URL base64
+// (ex.: "data:image/png;base64,...."). Guardamos direto no Postgres —
+// sem serviço de storage externo — então só validamos o formato e um
+// limite de tamanho razoável pra não estourar o limite de payload da API.
+const TAMANHO_MAXIMO_IMAGEM_BASE64 = 6 * 1024 * 1024; // ~6MB de texto base64
+function validarImagemBase64(imagemBase64) {
+  if (imagemBase64 == null || imagemBase64 === '') return null;
+  if (typeof imagemBase64 !== 'string' || !imagemBase64.startsWith('data:image/')) {
+    throw { status: 400, message: 'Imagem deve ser enviada como data URL (ex.: data:image/png;base64,...)' };
+  }
+  if (imagemBase64.length > TAMANHO_MAXIMO_IMAGEM_BASE64) {
+    throw { status: 400, message: 'Imagem muito grande. Envie um arquivo menor.' };
+  }
+  return imagemBase64;
+}
+
 async function criar(dados) {
   const erros = [
     ...validarCamposObrigatoriosMaterial(dados),
@@ -82,6 +98,7 @@ async function criar(dados) {
     registro_anvisa: dados.registro_anvisa ?? null,
     data_entrada: dados.data_entrada ?? null,
     validade: dados.validade ?? null,
+    imagem_base64: validarImagemBase64(dados.imagem_base64),
   });
 
   return comCamposCalculados(material);
@@ -104,6 +121,9 @@ async function atualizar(id, dados) {
     registro_anvisa: dados.registro_anvisa ?? materialAtual.registro_anvisa,
     data_entrada: dados.data_entrada ?? materialAtual.data_entrada,
     validade: dados.validade ?? materialAtual.validade,
+    imagem_base64: dados.imagem_base64 !== undefined
+      ? validarImagemBase64(dados.imagem_base64)
+      : materialAtual.imagem_base64,
   };
 
   const erros = [

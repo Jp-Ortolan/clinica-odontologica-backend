@@ -97,8 +97,33 @@ async function desvincularAluno(req, res, next) {
   catch (err) { next(err); }
 }
 
+// ── Materiais previstos para a cirurgia ─────────────────────
+
+async function listarMateriaisDaCirurgia(req, res, next) {
+  try { res.status(200).json(await cirurgiaService.listarMateriaisDaCirurgia(req.params.id)); }
+  catch (err) { next(err); }
+}
+
+async function adicionarMaterial(req, res, next) {
+  try { res.status(201).json(await cirurgiaService.adicionarMaterial(req.params.id, req.body)); }
+  catch (err) { next(err); }
+}
+
+async function atualizarQuantidadeMaterial(req, res, next) {
+  try {
+    const resultado = await cirurgiaService.atualizarQuantidadeMaterial(req.params.id, req.params.materialVinculoId, req.body.quantidade);
+    res.status(200).json(resultado);
+  } catch (err) { next(err); }
+}
+
+async function removerMaterial(req, res, next) {
+  try { res.status(200).json(await cirurgiaService.removerMaterial(req.params.id, req.params.materialVinculoId)); }
+  catch (err) { next(err); }
+}
+
 module.exports = {
   listar, buscarPorId, criar, atualizar, deletar,
   listarMutiroes, buscarMutiraoPorId, criarMutirao, atualizarMutirao, deletarMutirao, listarCirurgiasDoMutirao,
   listarAlunosDaCirurgia, vincularAluno, desvincularAluno,
+  listarMateriaisDaCirurgia, adicionarMaterial, atualizarQuantidadeMaterial, removerMaterial,
 };
