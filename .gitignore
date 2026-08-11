@@ -2,7 +2,10 @@ node_modules/
 .env
 *.log
 coverage/
+# A pasta docs/ era ignorada por inteiro (guardava PDFs e material de
+# trabalho). A documentação da API faz parte do projeto e deve ser versionada.
 docs/
+!docs/ENDPOINTS.md
 
 # Documentos de apoio/entrega (não fazem parte do código-fonte)
 *.docx

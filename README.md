@@ -14,8 +14,21 @@ Sistema de gestão para clínica odontológica universitária
 | API externa | ViaCEP |
 | Containers | Docker / Docker Compose |
 | CI/CD | GitHub Actions |
-| Documentação da API | Swagger / OpenAPI (planejado) |
-| Deploy | Render (planejado) |
+| Documentação da API | [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) |
+| Deploy | Railway (em produção) |
+
+## Aplicação no ar
+
+| | |
+|---|---|
+| **API** | https://clinica-odontologica-backend-production.up.railway.app |
+| **Health check** | [`/health`](https://clinica-odontologica-backend-production.up.railway.app/health) — responde `{"status":"ok"}` |
+| **Métricas** | [`/metrics`](https://clinica-odontologica-backend-production.up.railway.app/metrics) — uptime, requisições, memória |
+| **Base das rotas** | `/api` (ex.: `/api/pacientes`) |
+| **Front-end** | https://clinicaodontologica-frontend.vercel.app |
+
+Todas as rotas sob `/api` exigem token JWT, obtido em `POST /api/auth/login`.
+A lista completa está em [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md).
 
 ## Estrutura de Pastas
 
@@ -40,13 +53,12 @@ clinica-odontologica-backend/
 │   │   ├── jwt.js             # Geração/verificação de token
 │   │   └── qrcode.js          # Geração de QR Code
 │   └── app.js                 # Configuração do Express
-├── migrations/
-│   ├── 001_create_tables.sql          # Criação das tabelas (modelagem inicial)
-│   └── 002_ajustes_modelagem_fase3.sql # Ajustes de modelagem (Fase 3)
-├── tests/
-│   ├── auth.test.js           # Testes de login (4 testes)
-│   ├── pacientes.test.js      # Testes da API de pacientes (8 testes)
-│   └── setup.js               # Configuração do ambiente de testes
+├── migrations/                # 13 migrations versionadas, aplicadas em ordem
+│   ├── 001_create_tables.sql  # Modelagem inicial
+│   ├── ...
+│   └── 013_corrige_documento_paciente.sql
+│   └── archive/               # Versão abandonada da 002 (ver comentário nela)
+├── tests/                     # 15 arquivos de teste (Jest + Supertest)
 ├── scripts/
 ├── .env.example
 ├── .dockerignore
@@ -57,7 +69,7 @@ clinica-odontologica-backend/
 └── server.js                  # Entry point
 ```
 
-Módulos atuais: `auth`, `usuario`, `paciente`, `consulta`, `cirurgia`, `material`, `movimentacao`, `esterilizacao` — cada um com controller, service, repository e rotas próprias.
+Módulos atuais: `auth`, `usuario`, `paciente`, `consulta`, `cirurgia`, `material`, `categoria`, `movimentacao`, `esterilizacao`, `notificacao`, `dashboard`, `log` e `permissao` — cada um com controller, service, repository e rotas próprias.
 
 ## Arquitetura
 
@@ -88,13 +100,17 @@ Requisição HTTP
 |---|---|
 | Autenticação | usuario |
 | Usuários | usuario |
-| Pacientes | paciente, documento_paciente |
-| Consultas | consulta |
-| Cirurgias | cirurgia |
-| Materiais / Estoque | material, movimentacao_estoque |
-| Esterilização | esterilizacao, pacote_esterilizado |
+| Pacientes | paciente, documento_paciente, alergia_paciente, medicamento_paciente, evolucao_paciente |
+| Consultas | consulta, consulta_material |
+| Cirurgias | cirurgia, cirurgia_aluno, cirurgia_material, mutirao_cirurgico |
+| Materiais / Estoque | material, categoria, movimentacao_estoque |
+| Esterilização (CME) | esterilizacao, pacote_esterilizado, controle_biologico |
+| Notificações | notificacao |
+| Dashboard e relatórios | (consulta as tabelas acima) |
+| Logs e permissões | (arquivo de log + matriz em `config/permissoes.js`) |
 
-Os módulos de **Autenticação** e **Pacientes** já possuem regra de negócio completa e testes automatizados. Os demais já têm rotas, autenticação e permissões configuradas; a regra de negócio está em desenvolvimento, seguindo o mesmo padrão.
+São 19 tabelas e 98 endpoints, todos com regra de negócio, autenticação e
+controle de permissão por perfil.
 
 ## Perfis de Acesso
 
@@ -114,9 +130,15 @@ npm install
 cp .env.example .env
 # Edite o .env com suas credenciais
 
-# 3. Rodar em desenvolvimento
+# 3. Aplicar as migrations no banco
+npm run migrate
+
+# 4. Rodar em desenvolvimento
 npm run dev
 ```
+
+O `npm run migrate` controla o que já foi aplicado numa tabela `_migrations`,
+então pode ser executado várias vezes sem repetir migration.
 
 ## Rodando com Docker
 
@@ -147,7 +169,7 @@ docker compose exec db pg_restore -U postgres -d clinica_odontologica --clean /b
 npm test
 ```
 
-Executa os testes automatizados (Jest + Supertest) com mocks de banco de dados — atualmente 179 testes, todos passando.
+Executa os testes automatizados (Jest + Supertest) com mocks de banco de dados.
 
 ## Variáveis de Ambiente
 
