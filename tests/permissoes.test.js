@@ -43,3 +43,36 @@ describe('GET /api/permissoes', () => {
     expect(res.body.find((m) => m.modulo === 'pacientes')).toBeTruthy();
   });
 });
+
+describe('Matriz montada a partir das rotas reais', () => {
+  async function matriz() {
+    const res = await request(app)
+      .get('/api/permissoes')
+      .set('Authorization', `Bearer ${tokenProfessor}`);
+    return Object.fromEntries(res.body.map((m) => [m.modulo, m.perfis]));
+  }
+
+  it('coordenador aparece em toda ação permitida ao professor', async () => {
+    const m = await matriz();
+    Object.values(m).forEach((acoes) => {
+      Object.values(acoes).forEach((perfis) => {
+        if (perfis.includes('professor')) expect(perfis).toContain('coordenador');
+      });
+    });
+  });
+
+  it('reflete as rotas: paciente não tem "remover" e movimentação também não', async () => {
+    const m = await matriz();
+    expect(m.pacientes.remover).toBeUndefined();
+    expect(m.logs).toEqual({ listar: ['coordenador', 'professor'] });
+    expect(m['pacientes.medicamentos'].criar).toContain('recepcionista');
+  });
+
+  it('coordenador acessa rota de professor (ex.: logs)', async () => {
+    const tokenCoordenador = gerarToken('coordenador');
+    const res = await request(app)
+      .get('/api/logs')
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
+    expect(res.status).not.toBe(403);
+  });
+});
