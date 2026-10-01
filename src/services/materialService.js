@@ -115,7 +115,15 @@ async function atualizar(id, dados) {
   const materialAtual = await materialRepository.buscarPorId(id);
   if (!materialAtual) throw { status: 404, message: 'Material não encontrado' };
 
-  if (dados.quantidade !== undefined && Number(dados.quantidade) !== Number(materialAtual.quantidade)) throw {status:400,message:'Use uma entrada ou saída por lote para alterar o estoque.'};
+  // O saldo só muda por movimentação (entrada/saída), que fica no
+  // histórico. Editar a quantidade direto apagaria esse rastro.
+  if (dados.quantidade !== undefined && Number(dados.quantidade) !== Number(materialAtual.quantidade)) {
+    throw {
+      status: 400,
+      message: 'A quantidade em estoque só pode ser alterada por uma movimentação de entrada ou saída',
+    };
+  }
+
   const dadosAtualizados = {
     tipo_material: dados.tipo_material ?? materialAtual.tipo_material,
     passa_cme: dados.passa_cme ?? materialAtual.passa_cme,
@@ -123,7 +131,7 @@ async function atualizar(id, dados) {
     codigo_barras: dados.codigo_barras ?? materialAtual.codigo_barras,
     categoria_id: dados.categoria_id ?? materialAtual.categoria_id,
     unidade_medida: dados.unidade_medida ?? materialAtual.unidade_medida,
-    quantidade: dados.quantidade ?? materialAtual.quantidade,
+    quantidade: materialAtual.quantidade,
     estoque_minimo: dados.estoque_minimo ?? materialAtual.estoque_minimo,
     estoque_ideal: dados.estoque_ideal !== undefined ? dados.estoque_ideal : materialAtual.estoque_ideal,
     fabricante: dados.fabricante ?? materialAtual.fabricante,

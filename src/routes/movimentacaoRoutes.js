@@ -13,10 +13,9 @@ router.get('/:id', auth, autorizar('coordenador', 'professor', 'aluno'), movimen
 // POST /api/movimentacoes → professor e aluno (registra entrada/saída)
 router.post('/', auth, autorizar('coordenador', 'professor', 'aluno'), movimentacaoController.criar);
 
-// PUT /api/movimentacoes/:id → 405 por design (movimentações são imutáveis)
+// PUT e DELETE /api/movimentacoes/:id → 405 por design (histórico imutável:
+// para corrigir, registre uma entrada/saída inversa no lote)
 router.put('/:id', auth, autorizar('coordenador', 'professor', 'aluno'), movimentacaoController.atualizar);
-
-// DELETE /api/movimentacoes/:id → apenas professor
-router.delete('/:id', auth, autorizar('coordenador', 'professor'), movimentacaoController.deletar);
+router.delete('/:id', auth, autorizar('coordenador', 'professor', 'aluno'), movimentacaoController.atualizar);
 
 module.exports = router;

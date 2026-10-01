@@ -1,24 +1,22 @@
 # ============================================================
-# Dockerfile — Clínica Odontológica Backend
+# Dockerfile — Clínica Odontológica Backend (usado pelo Railway)
 # ============================================================
-
-# Imagem base: Node.js 20 versão slim (menor tamanho)
 FROM node:20-slim
 
-# Define o diretório de trabalho dentro do container
 WORKDIR /app
 
-# Copia os arquivos de dependências primeiro (otimiza cache do Docker)
+# Dependências primeiro (aproveita o cache do Docker). npm ci instala
+# exatamente o que está no package-lock.json.
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Instala apenas as dependências de produção
-RUN npm install --omit=dev
-
-# Copia o restante do código
 COPY . .
 
-# Expõe a porta que o servidor usa
+# Não roda como root dentro do container.
+USER node
+
 EXPOSE 3000
 
-# Comando para iniciar o servidor
-CMD ["node", "server.js"]
+# Aplica as migrations pendentes e só então sobe a API. Se uma migration
+# falhar, o container não sobe e o Railway mantém a versão anterior no ar.
+CMD ["sh", "-c", "node scripts/migrate.js && exec node server.js"]

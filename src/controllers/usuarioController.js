@@ -38,7 +38,7 @@ async function atualizar(req, res, next) {
 
 async function deletar(req, res, next) {
   try {
-    res.status(200).json(await usuarioService.deletar(req.params.id, req.user.id));
+    res.status(200).json(await usuarioService.deletar(req.params.id, req.user));
   } catch (err) {
     next(err);
   }

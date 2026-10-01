@@ -50,26 +50,10 @@ function validarValoresNumericosMaterial(dados) {
   return erros;
 }
 
-function validarMovimentacao(dados) {
-  const erros = [];
-
-  if (!dados.material_id) {
-    erros.push('Material é obrigatório');
-  }
-  if (!dados.tipo || !['entrada', 'saida'].includes(dados.tipo)) {
-    erros.push("Tipo deve ser 'entrada' ou 'saida'");
-  }
-  if (!ehInteiroValido(dados.quantidade) || Number(dados.quantidade) <= 0) {
-    erros.push('Quantidade deve ser um número inteiro maior que zero');
-  }
-
-  return erros;
-}
 
 module.exports = {
   ehInteiroValido,
   ehDataValida,
   validarCamposObrigatoriosMaterial,
   validarValoresNumericosMaterial,
-  validarMovimentacao,
 };

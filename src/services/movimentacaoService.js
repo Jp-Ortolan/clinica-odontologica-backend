@@ -1,9 +1,7 @@
 // Regras do registro de entradas e saídas de estoque.
 
 const movimentacaoRepository = require('../repositories/movimentacaoRepository');
-
-// Regra de quem recebe cada aviso: utils/notificarEventos.js
-
+const rastreabilidadeService = require('./rastreabilidadeService');
 
 async function listar(filtros) {
   return movimentacaoRepository.listar(filtros);
@@ -15,13 +13,11 @@ async function buscarPorId(id) {
   return movimentacao;
 }
 
+// Entrada/saída de estoque: sempre por lote, numa transação (ver
+// rastreabilidadeService.movimentar). Movimentações são imutáveis: para
+// corrigir um lançamento, registre a movimentação inversa.
 async function criar(dados, usuarioId) {
-  return require('./rastreabilidadeService').movimentar(dados.material_id, dados, {id:usuarioId});
+  return rastreabilidadeService.movimentar(dados.material_id, dados, { id: usuarioId });
 }
 
-async function deletar(id) {
-  await buscarPorId(id);
-  throw { status: 409, message: 'Movimentações não podem ser apagadas. Registre uma entrada ou saída de correção para preservar os saldos dos lotes.' };
-}
-
-module.exports = { listar, buscarPorId, criar, deletar };
+module.exports = { listar, buscarPorId, criar };

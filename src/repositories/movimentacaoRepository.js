@@ -37,23 +37,6 @@ async function buscarPorId(id) {
   return result.rows[0] || null;
 }
 
-async function criar(dados) {
-  const { material_id, usuario_id, tipo, quantidade, observacao } = dados;
-  const result = await pool.query(
-    `INSERT INTO movimentacao_estoque (material_id, usuario_id, tipo, quantidade, observacao)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id`,
-    [material_id, usuario_id, tipo, quantidade, observacao ?? null]
-  );
-  return buscarPorId(result.rows[0].id);
-}
 
-async function deletar(id) {
-  const result = await pool.query(
-    'DELETE FROM movimentacao_estoque WHERE id = $1 RETURNING *',
-    [id]
-  );
-  return result.rows[0] || null;
-}
 
-module.exports = { listar, buscarPorId, criar, deletar };
+module.exports = { listar, buscarPorId };

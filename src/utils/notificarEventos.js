@@ -67,16 +67,6 @@ async function estoqueBaixo(material) {
   });
 }
 
-async function materialVencendo(material, diasRestantes) {
-  return paraPerfis(PERFIS_CLINICOS, {
-    titulo: diasRestantes <= 0 ? 'Material vencido' : 'Material perto do vencimento',
-    mensagem: diasRestantes <= 0
-      ? `${material.nome} venceu em ${new Date(material.validade).toLocaleDateString('pt-BR')}`
-      : `${material.nome} vence em ${diasRestantes} dia(s)`,
-    tipo: 'estoque',
-    referencia_id: material.id,
-  });
-}
 
 // ── CME / esterilização ────────────────────────────────────────────────
 
@@ -93,14 +83,6 @@ async function controleBiologicoPositivo(cicloId, resultado) {
 // Vão para o profissional responsável pelo atendimento. A recepção só é
 // avisada de cancelamento, porque é ela quem remaneja a agenda.
 
-async function consultaAgendada(usuarioResponsavelId, { pacienteNome, quandoFormatado, consultaId }) {
-  return paraUsuario(usuarioResponsavelId, {
-    titulo: 'Nova consulta agendada',
-    mensagem: `${pacienteNome} — ${quandoFormatado}`,
-    tipo: 'consulta',
-    referencia_id: consultaId,
-  });
-}
 
 async function consultaReagendada(usuarioResponsavelId, { quandoFormatado, consultaId }) {
   return paraUsuario(usuarioResponsavelId, {
@@ -158,9 +140,7 @@ module.exports = {
   paraUsuario,
   paraPerfis,
   estoqueBaixo,
-  materialVencendo,
   controleBiologicoPositivo,
-  consultaAgendada,
   consultaReagendada,
   consultaCancelada,
   cirurgiaAgendada,

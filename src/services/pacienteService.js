@@ -73,11 +73,6 @@ async function atualizarStatusAtivo(id, ativo) {
   return atualizado;
 }
 
-async function deletar(id) {
-  const deletado = await pacienteRepository.deletar(id);
-  if (!deletado) throw { status: 404, message: 'Paciente não encontrado' };
-  return { message: 'Paciente removido com sucesso' };
-}
 
 // ── Alergias ─────────────────────────────────────────────────
 
@@ -190,7 +185,7 @@ async function criarEvolucao(pacienteId, usuarioId, dados) {
 }
 
 module.exports = {
-  listar, buscarPorId, buscarEnderecoPorCep, criar, atualizar, atualizarStatusAtivo, deletar,
+  listar, buscarPorId, buscarEnderecoPorCep, criar, atualizar, atualizarStatusAtivo,
   listarAlergias, criarAlergia, deletarAlergia,
   listarMedicamentos, criarMedicamento, deletarMedicamento,
   listarDocumentos, criarDocumento, baixarDocumento, deletarDocumento,

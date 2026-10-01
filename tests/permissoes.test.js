@@ -43,3 +43,31 @@ describe('GET /api/permissoes', () => {
     expect(res.body.find((m) => m.modulo === 'pacientes')).toBeTruthy();
   });
 });
+
+describe('Matriz montada a partir das rotas reais', () => {
+  async function matriz() {
+    const res = await request(app)
+      .get('/api/permissoes')
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
+    return Object.fromEntries(res.body.map((m) => [m.modulo, m.perfis]));
+  }
+
+  it('coordenador aparece em toda ação clínica permitida ao professor', async () => {
+    const m = await matriz();
+    Object.values(m).forEach((acoes) => {
+      Object.values(acoes).forEach((perfis) => {
+        if (perfis.includes('professor')) expect(perfis).toContain('coordenador');
+      });
+    });
+  });
+
+  it('reflete as rotas reais', async () => {
+    const m = await matriz();
+    expect(m.pacientes.remover).toBeUndefined(); // paciente não é excluído
+    expect(m.logs).toEqual({ listar: ['coordenador'] });
+    expect(m.usuarios.listar).toEqual(['coordenador']);
+    expect(m['usuarios.profissionais'].listar).toContain('professor');
+    // rotas protegidas no arquivo inteiro (router.use) também entram
+    expect(m['rastreabilidade.pacotes'].criar).toEqual(['coordenador', 'professor', 'aluno']);
+  });
+});

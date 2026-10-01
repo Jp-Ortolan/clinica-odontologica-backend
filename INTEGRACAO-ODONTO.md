@@ -12,7 +12,7 @@ As migrations abaixo foram aplicadas e registradas em `_migrations` no PostgreSQ
 - `017_lotes_pacotes_alunos.sql`
 - `018_compatibilidade_status.sql`
 
-Os arquivos entram no repositório para manter o histórico e permitir a criação/atualização de outros ambientes. Usar `npm run migrate`: o executor ignora os arquivos já registrados. Não reaplicar manualmente nem remover registros de `_migrations`. A migration 018 amplia os status de consulta e pacote aceitos pelo banco.
+Os arquivos entram no repositório para manter o histórico e permitir a criação/atualização de outros ambientes. O `npm run migrate` roda sozinho no deploy (Dockerfile) e ignora os arquivos já registrados; na primeira execução ele só preenche o checksum das migrations antigas. A única migration nova depois desta integração é a `019_log_auditoria.sql` (tabela de auditoria). Não reaplicar manualmente nem remover registros de `_migrations`. A migration 018 amplia os status de consulta e pacote aceitos pelo banco.
 
 A aplicação do banco foi validada em PostgreSQL local e em uma nova conexão somente leitura no Railway. A integração da API publicada ainda precisa da homologação abaixo. Não executar scripts de teste com dados fictícios contra produção.
 

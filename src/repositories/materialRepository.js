@@ -136,20 +136,7 @@ async function contarMovimentacoesVinculadas(id) {
   return result.rows[0].total;
 }
 
-// Ajusta a quantidade em estoque de forma atômica.
-// delta positivo = entrada, delta negativo = saída.
-// A CHECK chk_material_quantidade_nao_negativa garante que o estoque
-// nunca fique negativo (lança erro de constraint se isso for tentado).
-async function ajustarQuantidade(id, delta) {
-  const result = await pool.query(
-    `UPDATE material
-     SET quantidade = quantidade + $1
-     WHERE id = $2
-     RETURNING *`,
-    [delta, id]
-  );
-  return result.rows[0] || null;
-}
+
 
 module.exports = {
   listar,
@@ -159,5 +146,4 @@ module.exports = {
   atualizar,
   deletar,
   contarMovimentacoesVinculadas,
-  ajustarQuantidade,
 };

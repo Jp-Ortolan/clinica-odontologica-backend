@@ -1,15 +1,5 @@
 const pool = require('../config/database');
-
-async function transacao(fn) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const resultado = await fn(client);
-    await client.query('COMMIT');
-    return resultado;
-  } catch (err) { await client.query('ROLLBACK'); throw err; }
-  finally { client.release(); }
-}
+const transacao = require('../utils/transacao');
 
 async function lerSaude(client, id) {
   const { rows } = await client.query('SELECT alergias_status, medicamentos_status, saude_versao FROM paciente WHERE id = $1', [id]);

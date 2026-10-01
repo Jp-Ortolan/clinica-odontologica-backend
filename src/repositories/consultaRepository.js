@@ -1,6 +1,7 @@
 // Queries SQL da tabela consulta.
 
 const pool = require('../config/database');
+const transacao = require('../utils/transacao');
 
 async function listar(filtros = {}) {
   const condicoes = [];
@@ -39,24 +40,21 @@ async function buscarPorId(id) {
 
 async function criar(dados) {
   const { paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina } = dados;
-  const client = await pool.connect();
-  try {
-  await client.query('BEGIN');
-  const result = await client.query(
-    `INSERT INTO consulta (paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina)
-     VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'agendada'), $7)
-     RETURNING *`,
-    [paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina ?? null]
-  );
-  const consulta = result.rows[0];
-  await client.query(
-    "INSERT INTO notificacao (usuario_id, titulo, mensagem, tipo, referencia_id) VALUES ($1, 'Nova consulta agendada', $2, 'consulta', $3)",
-    [usuario_id, `Nova consulta de ${disciplina}. Acesse a agenda para definir os alunos responsáveis.`, consulta.id]
-  );
-  await client.query('COMMIT');
-  return consulta;
-  } catch (err) { await client.query('ROLLBACK'); throw err; }
-  finally { client.release(); }
+  // Consulta e aviso ao professor responsável entram juntos (ou nenhum).
+  return transacao(async (client) => {
+    const result = await client.query(
+      `INSERT INTO consulta (paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina)
+       VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'agendada'), $7)
+       RETURNING *`,
+      [paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina ?? null]
+    );
+    const consulta = result.rows[0];
+    await client.query(
+      "INSERT INTO notificacao (usuario_id, titulo, mensagem, tipo, referencia_id) VALUES ($1, 'Nova consulta agendada', $2, 'consulta', $3)",
+      [usuario_id, `Nova consulta de ${disciplina}. Acesse a agenda para definir os alunos responsáveis.`, consulta.id]
+    );
+    return consulta;
+  });
 }
 
 async function atualizar(id, dados) {

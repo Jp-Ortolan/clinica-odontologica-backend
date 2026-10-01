@@ -80,12 +80,12 @@ describe('POST /api/auth/login', () => {
   });
 });
 
-describe('recupera??o por c?digo', () => {
-  it('rejeita solicita??o sem email', async () => {
+describe('recuperação por código', () => {
+  it('rejeita solicitação sem email', async () => {
     const res = await request(app).post('/api/auth/recuperar-senha').send({});
     expect(res.status).toBe(400);
   });
-  it('rejeita redefini??o por token antigo sem c?digo e email', async () => {
+  it('rejeita redefinição por token antigo sem código e email', async () => {
     const res = await request(app).post('/api/auth/redefinir-senha').send({ token: 'antigo', nova_senha: 'senha123' });
     expect(res.status).toBe(400);
   });

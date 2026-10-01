@@ -1,19 +1,17 @@
 const pool = require('../config/database');
 const QRCode = require('qrcode');
+const transacao = require('../utils/transacao');
+const eventos = require('../utils/notificarEventos');
+const auditLogger = require('../utils/auditLogger');
 const fail = (message, status = 400) => { throw { status, message }; };
 const inteiro = n => Number.isSafeInteger(Number(n)) && Number(n) > 0;
 const dataValida = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d)) && new Date(d).toISOString().slice(0,10) === d;
-async function transacao(fn) {
- const c = await pool.connect();
- try { await c.query('BEGIN'); const r = await fn(c); await c.query('COMMIT'); return r; }
- catch(e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
-}
 async function lotes(id) { return (await pool.query('SELECT * FROM material_lote WHERE material_id=$1 ORDER BY validade NULLS LAST,id',[id])).rows; }
 async function movimentar(id,d,u) {
  if (!inteiro(d.quantidade) || !['entrada','saida'].includes(d.tipo)) fail('Informe tipo e quantidade inteira positiva.');
  if (d.tipo === 'entrada' && (!d.lote?.trim() || !dataValida(d.validade) || !dataValida(d.data_recebimento))) fail('Lote, validade e data de recebimento são obrigatórios.');
  if (d.tipo === 'entrada' && d.validade < d.data_recebimento) fail('A validade não pode ser anterior ao recebimento.');
- return transacao(async c => {
+ const { movimento, antes, depois } = await transacao(async c => {
   const material=(await c.query('SELECT * FROM material WHERE id=$1 FOR UPDATE',[id])).rows[0];
   if(!material) fail('Material não encontrado.',404);
   let lote;
@@ -29,8 +27,15 @@ async function movimentar(id,d,u) {
   const delta=d.tipo==='entrada'?Number(d.quantidade):-Number(d.quantidade);
   await c.query('UPDATE material_lote SET quantidade=quantidade+$1 WHERE id=$2',[delta,lote.id]);
   await c.query('UPDATE material SET quantidade=quantidade+$1 WHERE id=$2',[delta,id]);
-  return (await c.query('INSERT INTO movimentacao_estoque(material_id,usuario_id,tipo,quantidade,observacao,lote_id,data_recebimento,fornecedor) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[id,u.id,d.tipo,Number(d.quantidade),d.observacao||null,lote.id,d.tipo==='entrada'?d.data_recebimento:null,d.tipo==='entrada'?d.fornecedor||null:null])).rows[0];
+  const registro=(await c.query('INSERT INTO movimentacao_estoque(material_id,usuario_id,tipo,quantidade,observacao,lote_id,data_recebimento,fornecedor) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[id,u.id,d.tipo,Number(d.quantidade),d.observacao||null,lote.id,d.tipo==='entrada'?d.data_recebimento:null,d.tipo==='entrada'?d.fornecedor||null:null])).rows[0];
+  return { movimento: registro, antes: material, depois: { ...material, quantidade: Number(material.quantidade) + delta } };
  });
+ auditLogger.info('Movimentação de estoque', { material_id: Number(id), lote_id: movimento.lote_id, tipo: d.tipo, quantidade: Number(d.quantidade), usuario_id: u.id });
+ // Aviso de estoque baixo fora da transação: se o aviso falhar, a movimentação já valeu.
+ if (d.tipo === 'saida' && Number(antes.quantidade) > Number(antes.estoque_minimo) && depois.quantidade <= Number(depois.estoque_minimo)) {
+  await eventos.estoqueBaixo(depois);
+ }
+ return movimento;
 }
 const pacoteSelect = `SELECT p.*, COALESCE(p.nome,m.nome,'Pacote CME') AS nome_pacote,
  u.nome AS responsavel_preparo, o.nome AS responsavel_esterilizacao, e.equipamento, e.data_hora AS esterilizado_em,
@@ -52,7 +57,7 @@ async function criarPacote(d,u) {
   const instrumentos=(await c.query("SELECT id FROM material WHERE id=ANY($1::int[]) AND tipo_material='instrumental' AND passa_cme=true FOR SHARE",[ids])).rows;
   if(instrumentos.length!==ids.length) fail('Selecione somente instrumentais reutilizáveis que passam pelo CME.');
   const p=(await c.query("INSERT INTO pacote_esterilizado(nome,preparado_por,status) VALUES($1,$2,'aguardando') RETURNING id",[d.nome.trim(),u.id])).rows[0];
-  for(const i of d.itens) await c.query('INSERT INTO pacote_item VALUES($1,$2,$3)',[p.id,i.material_id,i.quantidade]);
+  for(const i of d.itens) await c.query('INSERT INTO pacote_item(pacote_id,material_id,quantidade) VALUES($1,$2,$3)',[p.id,i.material_id,i.quantidade]);
   await c.query("INSERT INTO pacote_evento(pacote_id,usuario_id,evento) VALUES($1,$2,'Pacote preparado')",[p.id,u.id]);
   return p.id;
  }); return pacote(id);
@@ -79,7 +84,9 @@ async function processarPacote(id,d,u) {
    await c.query("UPDATE pacote_esterilizado SET status='utilizado' WHERE id=$1",[id]);
   } else fail('Ação inválida.');
   await c.query('INSERT INTO pacote_evento(pacote_id,usuario_id,evento) VALUES($1,$2,$3)',[id,u.id,d.acao]);
- }); return pacote(id);
+ });
+ auditLogger.info('Pacote CME: ' + d.acao, { pacote_id: Number(id), usuario_id: u.id });
+ return pacote(id);
 }
 async function etiqueta(id) {
  const p=await pacote(id);

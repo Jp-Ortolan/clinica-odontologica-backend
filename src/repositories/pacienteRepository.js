@@ -69,13 +69,6 @@ async function atualizarStatusAtivo(id, ativo) {
   return result.rows[0] || null;
 }
 
-async function deletar(id) {
-  const result = await pool.query(
-    'DELETE FROM paciente WHERE id = $1 RETURNING id',
-    [id]
-  );
-  return result.rows[0] || null;
-}
 
 // ── Alergias ─────────────────────────────────────────────────
 
@@ -193,7 +186,7 @@ async function criarEvolucao(pacienteId, usuarioId, dados) {
 }
 
 module.exports = {
-  listar, buscarPorId, buscarPorCpf, criar, atualizar, atualizarStatusAtivo, deletar,
+  listar, buscarPorId, buscarPorCpf, criar, atualizar, atualizarStatusAtivo,
   listarAlergias, criarAlergia, deletarAlergia,
   listarMedicamentos, criarMedicamento, deletarMedicamento,
   listarDocumentos, buscarDocumentoPorId, criarDocumento, deletarDocumento,

@@ -347,3 +347,27 @@ describe('PUT /api/movimentacoes/:id', () => {
     expect(res.status).toBe(405);
   });
 });
+
+describe('DELETE /api/movimentacoes/:id', () => {
+  it('retorna 405: o histórico de estoque não pode ser apagado', async () => {
+    const res = await request(app)
+      .delete('/api/movimentacoes/1')
+      .set('Authorization', `Bearer ${tokenProfessor}`);
+
+    expect(res.status).toBe(405);
+  });
+});
+
+describe('PUT /api/materiais/:id (quantidade)', () => {
+  it('retorna 400 ao tentar mudar o saldo sem movimentação', async () => {
+    materialRepository.buscarPorId.mockResolvedValue(materialFake); // quantidade: 10
+
+    const res = await request(app)
+      .put('/api/materiais/1')
+      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .send({ quantidade: 999 });
+
+    expect(res.status).toBe(400);
+    expect(materialRepository.atualizar).not.toHaveBeenCalled();
+  });
+});

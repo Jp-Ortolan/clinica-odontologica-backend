@@ -118,33 +118,10 @@ describe('POST /api/pacientes', () => {
 });
 
 describe('DELETE /api/pacientes/:id', () => {
-  afterEach(() => jest.clearAllMocks());
-
-  it('retorna 403 quando o perfil não é professor', async () => {
+  // Paciente não é excluído (guarda obrigatória do prontuário); só inativado.
+  it('não existe rota de exclusão, nem para professor', async () => {
     const res = await request(app)
       .delete('/api/pacientes/1')
-      .set('Authorization', `Bearer ${tokenRecepcionista}`);
-
-    expect(res.status).toBe(403);
-    expect(pacienteRepository.deletar).not.toHaveBeenCalled();
-  });
-
-  it('retorna 200 ao remover paciente existente (professor)', async () => {
-    pacienteRepository.deletar.mockResolvedValue({ id: 1 });
-
-    const res = await request(app)
-      .delete('/api/pacientes/1')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.message).toMatch(/sucesso/i);
-  });
-
-  it('retorna 404 ao tentar remover paciente inexistente (professor)', async () => {
-    pacienteRepository.deletar.mockResolvedValue(null);
-
-    const res = await request(app)
-      .delete('/api/pacientes/999')
       .set('Authorization', `Bearer ${tokenProfessor}`);
 
     expect(res.status).toBe(404);

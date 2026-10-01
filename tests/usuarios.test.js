@@ -155,6 +155,7 @@ describe('DELETE /api/usuarios/:id', () => {
   });
 
   it('retorna 200 ao remover outro usuário (coordenador)', async () => {
+    usuarioRepository.buscarPorId.mockResolvedValue({ id: 10, perfil: 'aluno' });
     usuarioRepository.deletar.mockResolvedValue({ id: 10 });
 
     const res = await request(app)

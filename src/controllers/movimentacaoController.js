@@ -29,18 +29,10 @@ async function criar(req, res, next) {
 }
 
 async function atualizar(req, res) {
-  // Movimentações de estoque são imutáveis por design (não há rota PUT):
-  // para corrigir um lançamento, remova-o (DELETE) e registre um novo.
-  res.status(405).json({ message: 'Movimentações não podem ser editadas. Remova e registre uma nova.' });
+  // Movimentações de estoque são imutáveis (histórico de auditoria): para
+  // corrigir um lançamento, registre a movimentação inversa.
+  res.status(405).json({ message: 'Movimentações não podem ser editadas nem removidas. Registre uma movimentação inversa para corrigir.' });
 }
 
-async function deletar(req, res, next) {
-  try {
-    const resultado = await movimentacaoService.deletar(req.params.id);
-    res.status(200).json(resultado);
-  } catch (err) {
-    next(err);
-  }
-}
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar };
+module.exports = { listar, buscarPorId, criar, atualizar };

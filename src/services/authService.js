@@ -8,7 +8,7 @@ const recoveryEmail = require('./recoveryEmailService');
 
 function validarEmail(email) {
   if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw { status: 400, message: 'Informe um e-mail v?lido.' };
+    throw { status: 400, message: 'Informe um e-mail válido.' };
   }
   return email.trim();
 }
@@ -53,7 +53,7 @@ async function login(email, senha) {
 async function solicitarRecuperacaoSenha(email) {
   email = validarEmail(email);
   recoveryEmail.verificarConfiguracao();
-  const resposta = { message: 'Se o e-mail estiver cadastrado, voc? receber? um c?digo de confirma??o.' };
+  const resposta = { message: 'Se o e-mail estiver cadastrado, você receberá um código de confirmação.' };
   const usuario = await authRepository.findByEmail(email);
   if (!usuario) return resposta;
   const codigo = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
@@ -71,15 +71,15 @@ async function solicitarRecuperacaoSenha(email) {
 async function redefinirSenha(email, codigo, novaSenha) {
   email = validarEmail(email);
   if (typeof codigo !== 'string' || !/^\d{6}$/.test(codigo)) {
-    throw { status: 400, message: 'Informe o c?digo de 6 d?gitos recebido por e-mail.' };
+    throw { status: 400, message: 'Informe o código de 6 dígitos recebido por e-mail.' };
   }
   if (typeof novaSenha !== 'string' || novaSenha.length < 6 || Buffer.byteLength(novaSenha, 'utf8') > 72) {
-    throw { status: 400, message: 'A senha deve ter ao menos 6 caracteres e no m?ximo 72 bytes.' };
+    throw { status: 400, message: 'A senha deve ter ao menos 6 caracteres e no máximo 72 bytes.' };
   }
-  if (!process.env.JWT_SECRET) throw { status: 503, message: 'Recupera??o indispon?vel.' };
+  if (!process.env.JWT_SECRET) throw { status: 503, message: 'Recuperação indisponível.' };
   const senhaHash = await bcrypt.hash(novaSenha, 10);
   const sucesso = await recoveryRepository.consumirCodigo(email, resumoCodigo(email, codigo), senhaHash);
-  if (!sucesso) throw { status: 400, message: 'C?digo inv?lido, expirado ou limite de tentativas atingido. Solicite outro c?digo.' };
+  if (!sucesso) throw { status: 400, message: 'Código inválido, expirado ou limite de tentativas atingido. Solicite outro código.' };
   return { message: 'Senha redefinida com sucesso' };
 }
 

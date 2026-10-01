@@ -102,6 +102,15 @@ describe('POST /api/consultas', () => {
     expect(consultaRepository.criar).toHaveBeenCalled();
   });
 
+  it('retorna 401 sem token', async () => {
+    const res = await request(app)
+      .post('/api/consultas')
+      .send({ paciente_id: 1, usuario_id: 1, data_hora: '2026-08-01T10:00:00.000Z' });
+
+    expect(res.status).toBe(401);
+    expect(consultaRepository.criar).not.toHaveBeenCalled();
+  });
+
   it('retorna 400 quando faltam campos obrigatórios (aluno)', async () => {
     const res = await request(app)
       .post('/api/consultas')
