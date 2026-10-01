@@ -22,7 +22,7 @@ async function buscarPorId(req, res, next) {
 
 async function criar(req, res, next) {
   try {
-    res.status(201).json(await usuarioService.criar(req.body));
+    res.status(201).json(await usuarioService.criar(req.body, req.user));
   } catch (err) {
     next(err);
   }
@@ -30,7 +30,7 @@ async function criar(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    res.status(200).json(await usuarioService.atualizar(req.params.id, req.body));
+    res.status(200).json(await usuarioService.atualizar(req.params.id, req.body, req.user));
   } catch (err) {
     next(err);
   }
@@ -38,7 +38,7 @@ async function atualizar(req, res, next) {
 
 async function deletar(req, res, next) {
   try {
-    res.status(200).json(await usuarioService.deletar(req.params.id, req.user.id));
+    res.status(200).json(await usuarioService.deletar(req.params.id, req.user));
   } catch (err) {
     next(err);
   }

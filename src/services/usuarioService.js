@@ -1,9 +1,17 @@
-// Regras de cadastro de usuários do sistema (professor, aluno, recepcionista).
+// Regras de cadastro de usuários do sistema
+// (coordenador, professor, aluno, recepcionista).
 
 const bcrypt = require('bcrypt');
 const usuarioRepository = require('../repositories/usuarioRepository');
+const { PERFIS: PERFIS_VALIDOS } = require('../middlewares/perfil');
 
-const PERFIS_VALIDOS = ['professor', 'aluno', 'recepcionista'];
+// Só um coordenador pode criar, promover, alterar ou excluir um coordenador
+// (senão um professor conseguiria se dar acesso de coordenação).
+function exigirCoordenadorSeEnvolver(usuarioLogado, ...perfisEnvolvidos) {
+  if (perfisEnvolvidos.includes('coordenador') && usuarioLogado?.perfil !== 'coordenador') {
+    throw { status: 403, message: 'Apenas a coordenação pode gerenciar contas de coordenador' };
+  }
+}
 
 async function listar(filtros) {
   return usuarioRepository.listar(filtros);
@@ -15,7 +23,7 @@ async function buscarPorId(id) {
   return usuario;
 }
 
-async function criar(dados) {
+async function criar(dados, usuarioLogado) {
   const { nome, cpf, email, senha, perfil } = dados;
 
   if (!nome || !cpf || !email || !senha || !perfil) {
@@ -24,6 +32,7 @@ async function criar(dados) {
   if (!PERFIS_VALIDOS.includes(perfil)) {
     throw { status: 400, message: `Perfil inválido. Use: ${PERFIS_VALIDOS.join(', ')}` };
   }
+  exigirCoordenadorSeEnvolver(usuarioLogado, perfil);
   if (senha.length < 6) {
     throw { status: 400, message: 'A senha deve ter ao menos 6 caracteres' };
   }
@@ -52,12 +61,13 @@ async function criar(dados) {
   });
 }
 
-async function atualizar(id, dados) {
+async function atualizar(id, dados, usuarioLogado) {
   const usuario = await buscarPorId(id);
 
   if (dados.perfil && !PERFIS_VALIDOS.includes(dados.perfil)) {
     throw { status: 400, message: `Perfil inválido. Use: ${PERFIS_VALIDOS.join(', ')}` };
   }
+  exigirCoordenadorSeEnvolver(usuarioLogado, usuario.perfil, dados.perfil);
 
   if (dados.email && dados.email !== usuario.email) {
     const emailEmUso = await usuarioRepository.buscarPorEmail(dados.email);
@@ -91,10 +101,14 @@ async function atualizar(id, dados) {
 
 // usuarioLogadoId vem do token de quem está fazendo a chamada — ninguém
 // pode excluir a própria conta por essa rota.
-async function deletar(id, usuarioLogadoId) {
-  if (Number(id) === Number(usuarioLogadoId)) {
+// Usuário com histórico (consultas, movimentações, prontuário...) não pode
+// ser excluído — o banco recusa e a API responde 409. Nesse caso, inative.
+async function deletar(id, usuarioLogado) {
+  if (Number(id) === Number(usuarioLogado?.id)) {
     throw { status: 400, message: 'Não é possível excluir a própria conta' };
   }
+  const usuario = await buscarPorId(id);
+  exigirCoordenadorSeEnvolver(usuarioLogado, usuario.perfil);
   const deletado = await usuarioRepository.deletar(id);
   if (!deletado) throw { status: 404, message: 'Usuário não encontrado' };
   return { message: 'Usuário removido com sucesso' };

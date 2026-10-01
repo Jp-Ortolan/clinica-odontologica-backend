@@ -155,6 +155,7 @@ describe('DELETE /api/usuarios/:id', () => {
   });
 
   it('retorna 200 ao remover outro usuário (professor)', async () => {
+    usuarioRepository.buscarPorId.mockResolvedValue({ id: 10, perfil: 'aluno' });
     usuarioRepository.deletar.mockResolvedValue({ id: 10 });
 
     const res = await request(app)
@@ -173,5 +174,50 @@ describe('DELETE /api/usuarios/:id', () => {
       .set('Authorization', `Bearer ${tokenProfessor}`);
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('Contas de coordenador', () => {
+  const tokenCoordenador = jwt.sign(
+    { id: 2, nome: 'Coordenação', email: 'coord@teste.com', perfil: 'coordenador' },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  afterEach(() => jest.clearAllMocks());
+
+  it('professor NÃO pode criar um coordenador (403)', async () => {
+    const res = await request(app)
+      .post('/api/usuarios')
+      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .send({ nome: 'X', cpf: '1', email: 'x@x.com', senha: '123456', perfil: 'coordenador' });
+
+    expect(res.status).toBe(403);
+    expect(usuarioRepository.criar).not.toHaveBeenCalled();
+  });
+
+  it('professor NÃO pode promover alguém a coordenador (403)', async () => {
+    usuarioRepository.buscarPorId.mockResolvedValue({ id: 10, perfil: 'aluno', email: 'a@a.com', cpf: '1' });
+
+    const res = await request(app)
+      .put('/api/usuarios/10')
+      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .send({ perfil: 'coordenador' });
+
+    expect(res.status).toBe(403);
+    expect(usuarioRepository.atualizar).not.toHaveBeenCalled();
+  });
+
+  it('coordenador herda o acesso do professor e pode criar coordenador', async () => {
+    usuarioRepository.buscarPorEmail.mockResolvedValue(null);
+    usuarioRepository.buscarPorCpf.mockResolvedValue(null);
+    usuarioRepository.criar.mockResolvedValue({ id: 11, perfil: 'coordenador' });
+
+    const res = await request(app)
+      .post('/api/usuarios')
+      .set('Authorization', `Bearer ${tokenCoordenador}`)
+      .send({ nome: 'Y', cpf: '2', email: 'y@y.com', senha: '123456', perfil: 'coordenador' });
+
+    expect(res.status).toBe(201);
   });
 });
