@@ -27,8 +27,8 @@ router.put('/:id', auth, autorizar(...PROF_RECEP), pacienteController.atualizar)
 // PATCH /api/pacientes/:id/status → ativar/inativar (professor e recepcionista)
 router.patch('/:id/status', auth, autorizar(...PROF_RECEP), pacienteController.atualizarStatusAtivo);
 
-// DELETE /api/pacientes/:id → apenas professor
-router.delete('/:id', auth, autorizar('professor'), pacienteController.deletar);
+// Não existe DELETE de paciente: o prontuário tem guarda obrigatória.
+// Para tirar um paciente de circulação, use PATCH /:id/status (inativar).
 
 // ── Alergias ─────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ router.delete('/:id/alergias/:alergiaId', auth, autorizar('professor', 'aluno'),
 // ── Medicamentos ─────────────────────────────────────────────
 
 router.get('/:id/medicamentos', auth, autorizar(...TODOS), pacienteController.listarMedicamentos);
-router.post('/:id/medicamentos', auth, autorizar('professor', 'aluno'), pacienteController.criarMedicamento);
+router.post('/:id/medicamentos', auth, autorizar(...PROF_RECEP, 'aluno'), pacienteController.criarMedicamento);
 router.delete('/:id/medicamentos/:medicamentoId', auth, autorizar('professor', 'aluno'), pacienteController.deletarMedicamento);
 
 // ── Documentos ───────────────────────────────────────────────

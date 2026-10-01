@@ -57,14 +57,6 @@ async function atualizarStatusAtivo(req, res, next) {
   }
 }
 
-async function deletar(req, res, next) {
-  try {
-    const resultado = await pacienteService.deletar(req.params.id);
-    res.status(200).json(resultado);
-  } catch (err) {
-    next(err);
-  }
-}
 
 // ── Alergias ─────────────────────────────────────────────────
 
@@ -150,7 +142,7 @@ async function criarEvolucao(req, res, next) {
 }
 
 module.exports = {
-  listar, buscarPorId, buscarCep, criar, atualizar, atualizarStatusAtivo, deletar,
+  listar, buscarPorId, buscarCep, criar, atualizar, atualizarStatusAtivo,
   listarAlergias, criarAlergia, deletarAlergia,
   listarMedicamentos, criarMedicamento, deletarMedicamento,
   listarDocumentos, criarDocumento, baixarDocumento, deletarDocumento,

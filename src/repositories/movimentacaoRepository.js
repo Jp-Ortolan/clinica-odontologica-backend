@@ -31,28 +31,21 @@ async function listar(filtros = {}) {
   return result.rows;
 }
 
-async function buscarPorId(id) {
-  const result = await pool.query(`${SELECT_BASE} WHERE mv.id = $1`, [id]);
+async function buscarPorId(id, db = pool) {
+  const result = await db.query(`${SELECT_BASE} WHERE mv.id = $1`, [id]);
   return result.rows[0] || null;
 }
 
-async function criar(dados) {
+async function criar(dados, db = pool) {
   const { material_id, usuario_id, tipo, quantidade, observacao } = dados;
-  const result = await pool.query(
+  const result = await db.query(
     `INSERT INTO movimentacao_estoque (material_id, usuario_id, tipo, quantidade, observacao)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
     [material_id, usuario_id, tipo, quantidade, observacao ?? null]
   );
-  return buscarPorId(result.rows[0].id);
+  return buscarPorId(result.rows[0].id, db);
 }
 
-async function deletar(id) {
-  const result = await pool.query(
-    'DELETE FROM movimentacao_estoque WHERE id = $1 RETURNING *',
-    [id]
-  );
-  return result.rows[0] || null;
-}
 
-module.exports = { listar, buscarPorId, criar, deletar };
+module.exports = { listar, buscarPorId, criar };

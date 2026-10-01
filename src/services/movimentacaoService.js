@@ -5,6 +5,7 @@ const materialRepository = require('../repositories/materialRepository');
 const { validarMovimentacao } = require('../utils/validacoesEstoque');
 // Regra de quem recebe cada aviso: utils/notificarEventos.js
 const eventos = require('../utils/notificarEventos');
+const transacao = require('../utils/transacao');
 
 function calcularDelta(tipo, quantidade) {
   return tipo === 'entrada' ? Number(quantidade) : -Number(quantidade);
@@ -20,72 +21,51 @@ async function buscarPorId(id) {
   return movimentacao;
 }
 
+// Entrada/saída de estoque. Tudo dentro de uma transação: o registro no
+// histórico e o ajuste do saldo acontecem juntos ou não acontecem. A linha
+// do material fica travada (FOR UPDATE) para que duas saídas simultâneas
+// não passem do saldo disponível.
+//
+// Movimentações são imutáveis: não há edição nem exclusão. Para corrigir
+// um lançamento, registre a movimentação inversa (com observação).
 async function criar(dados, usuarioId) {
   const erros = validarMovimentacao(dados);
   if (erros.length) throw { status: 400, message: erros.join('; ') };
 
-  const material = await materialRepository.buscarPorId(dados.material_id);
-  if (!material) throw { status: 400, message: 'Material informado não existe' };
-
   const quantidade = Number(dados.quantidade);
+  const delta = calcularDelta(dados.tipo, quantidade);
 
-  // O estoque nunca pode ficar negativo.
-  if (dados.tipo === 'saida' && quantidade > material.quantidade) {
-    throw {
-      status: 409,
-      message: `Estoque insuficiente: disponível ${material.quantidade}, solicitado ${quantidade}`,
-    };
-  }
+  const { movimentacao, antes, depois } = await transacao(async (db) => {
+    const material = await materialRepository.buscarParaMovimentacao(dados.material_id, db);
+    if (!material) throw { status: 400, message: 'Material informado não existe' };
 
-  const movimentacao = await movimentacaoRepository.criar({
-    material_id: dados.material_id,
-    usuario_id: usuarioId,
-    tipo: dados.tipo,
-    quantidade,
-    observacao: dados.observacao,
+    if (dados.tipo === 'saida' && quantidade > material.quantidade) {
+      throw {
+        status: 409,
+        message: `Estoque insuficiente: disponível ${material.quantidade}, solicitado ${quantidade}`,
+      };
+    }
+
+    const registro = await movimentacaoRepository.criar({
+      material_id: dados.material_id,
+      usuario_id: usuarioId,
+      tipo: dados.tipo,
+      quantidade,
+      observacao: dados.observacao,
+    }, db);
+    const atualizado = await materialRepository.ajustarQuantidade(dados.material_id, delta, db);
+
+    return { movimentacao: registro, antes: material, depois: atualizado };
   });
 
-  const delta = calcularDelta(dados.tipo, quantidade);
-  await materialRepository.ajustarQuantidade(dados.material_id, delta);
-
-  // Depois de mexer no estoque, verifica se o material cruzou o limite e
-  // avisa quem repõe (professor e aluno — a recepção não acessa estoque).
-  // Só notifica na descida: entrada que recompõe o estoque não gera aviso.
-  if (delta < 0) {
-    const atualizado = await materialRepository.buscarPorId(dados.material_id);
-    const estavaOk = material.quantidade > material.estoque_minimo;
-    const ficouBaixo = atualizado.quantidade <= atualizado.estoque_minimo;
-    if (estavaOk && ficouBaixo) {
-      await eventos.estoqueBaixo(atualizado);
-    }
+  // Notificação fora da transação: se o aviso falhar, a movimentação já valeu.
+  const estavaOk = antes.quantidade > antes.estoque_minimo;
+  const ficouBaixo = depois.quantidade <= depois.estoque_minimo;
+  if (delta < 0 && estavaOk && ficouBaixo) {
+    await eventos.estoqueBaixo(depois);
   }
 
   return movimentacao;
 }
 
-async function deletar(id) {
-  const movimentacao = await movimentacaoRepository.buscarPorId(id);
-  if (!movimentacao) throw { status: 404, message: 'Movimentação não encontrada' };
-
-  const material = await materialRepository.buscarPorId(movimentacao.material_id);
-
-  // Desfaz o efeito da movimentação no estoque ao removê-la.
-  const deltaReverso = calcularDelta(
-    movimentacao.tipo === 'entrada' ? 'saida' : 'entrada',
-    movimentacao.quantidade
-  );
-
-  if (material.quantidade + deltaReverso < 0) {
-    throw {
-      status: 409,
-      message: 'Não é possível remover esta movimentação: o estoque ficaria negativo',
-    };
-  }
-
-  await materialRepository.ajustarQuantidade(movimentacao.material_id, deltaReverso);
-  await movimentacaoRepository.deletar(id);
-
-  return { message: 'Movimentação removida com sucesso' };
-}
-
-module.exports = { listar, buscarPorId, criar, deletar };
+module.exports = { listar, buscarPorId, criar };

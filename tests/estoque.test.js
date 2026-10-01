@@ -9,6 +9,9 @@ const jwt = require('jsonwebtoken');
 jest.mock('../src/repositories/categoriaRepository');
 jest.mock('../src/repositories/materialRepository');
 jest.mock('../src/repositories/movimentacaoRepository');
+// Sem banco nos testes: a "transação" só executa o trabalho com um client falso.
+const CLIENT_FAKE = { fake: 'client-da-transacao' };
+jest.mock('../src/utils/transacao', () => jest.fn((trabalho) => trabalho(CLIENT_FAKE)));
 
 const categoriaRepository = require('../src/repositories/categoriaRepository');
 const materialRepository = require('../src/repositories/materialRepository');
@@ -319,7 +322,7 @@ describe('POST /api/movimentacoes', () => {
   });
 
   it('retorna 400 quando o material informado não existe', async () => {
-    materialRepository.buscarPorId.mockResolvedValue(null);
+    materialRepository.buscarParaMovimentacao.mockResolvedValue(null);
 
     const res = await request(app)
       .post('/api/movimentacoes')
@@ -331,7 +334,7 @@ describe('POST /api/movimentacoes', () => {
   });
 
   it('retorna 409 quando a saída excede o estoque disponível', async () => {
-    materialRepository.buscarPorId.mockResolvedValue(materialFake); // quantidade: 10
+    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
 
     const res = await request(app)
       .post('/api/movimentacoes')
@@ -344,7 +347,7 @@ describe('POST /api/movimentacoes', () => {
   });
 
   it('retorna 201, registra a movimentação e ajusta o estoque (+) numa entrada', async () => {
-    materialRepository.buscarPorId.mockResolvedValue(materialFake); // quantidade: 10
+    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
     movimentacaoRepository.criar.mockResolvedValue(movimentacaoFake);
     materialRepository.ajustarQuantidade.mockResolvedValue({ ...materialFake, quantidade: 15 });
 
@@ -355,14 +358,15 @@ describe('POST /api/movimentacoes', () => {
 
     expect(res.status).toBe(201);
     expect(movimentacaoRepository.criar).toHaveBeenCalledWith(
-      expect.objectContaining({ material_id: 1, tipo: 'entrada', quantidade: 5 })
+      expect.objectContaining({ material_id: 1, tipo: 'entrada', quantidade: 5 }),
+      CLIENT_FAKE
     );
     // delta positivo para entrada
-    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, 5);
+    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, 5, CLIENT_FAKE);
   });
 
   it('retorna 201 e ajusta o estoque (-) numa saída válida', async () => {
-    materialRepository.buscarPorId.mockResolvedValue(materialFake); // quantidade: 10
+    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
     movimentacaoRepository.criar.mockResolvedValue({ ...movimentacaoFake, tipo: 'saida' });
     materialRepository.ajustarQuantidade.mockResolvedValue({ ...materialFake, quantidade: 7 });
 
@@ -373,7 +377,7 @@ describe('POST /api/movimentacoes', () => {
 
     expect(res.status).toBe(201);
     // delta negativo para saída
-    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, -3);
+    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, -3, CLIENT_FAKE);
   });
 });
 
@@ -408,5 +412,29 @@ describe('PUT /api/movimentacoes/:id', () => {
       .send({ quantidade: 99 });
 
     expect(res.status).toBe(405);
+  });
+});
+
+describe('DELETE /api/movimentacoes/:id', () => {
+  it('retorna 405: o histórico de estoque não pode ser apagado', async () => {
+    const res = await request(app)
+      .delete('/api/movimentacoes/1')
+      .set('Authorization', `Bearer ${tokenProfessor}`);
+
+    expect(res.status).toBe(405);
+  });
+});
+
+describe('PUT /api/materiais/:id (quantidade)', () => {
+  it('retorna 400 ao tentar mudar o saldo sem movimentação', async () => {
+    materialRepository.buscarPorId.mockResolvedValue(materialFake); // quantidade: 10
+
+    const res = await request(app)
+      .put('/api/materiais/1')
+      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .send({ quantidade: 999 });
+
+    expect(res.status).toBe(400);
+    expect(materialRepository.atualizar).not.toHaveBeenCalled();
   });
 });
