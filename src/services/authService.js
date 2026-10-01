@@ -39,29 +39,30 @@ async function login(email, senha) {
   };
 }
 
-// Gera um token de uso único, válido por 1h, pra recuperação de senha.
-// Em produção esse token iria por e-mail; como o projeto não tem
-// servidor de e-mail configurado, ele volta direto na resposta.
+// Gera um token de uso único, válido por 1h, para recuperação de senha.
+//
+// O token NUNCA volta na resposta: se voltasse, qualquer pessoa que
+// soubesse o e-mail de alguém poderia trocar a senha dessa pessoa.
+// Ele deve ser entregue por e-mail (fluxo da pasta backend-recuperacao).
+// No banco fica só o resumo SHA-256, nunca o token em texto puro.
+function resumoDoToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
 async function solicitarRecuperacaoSenha(email) {
+  const resposta = { message: 'Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação' };
   const usuario = await authRepository.findByEmail(email);
 
-  // Não revela se o e-mail existe ou não (evita enumeração de usuários).
-  if (!usuario) {
-    return { message: 'Se o e-mail existir, um link de recuperação foi gerado' };
-  }
+  // Mesma resposta exista ou não o e-mail (evita enumeração de usuários).
+  if (!usuario) return resposta;
 
   const token = crypto.randomBytes(32).toString('hex');
   const expiraEm = new Date(Date.now() + VALIDADE_TOKEN_MINUTOS * 60 * 1000);
 
-  await authRepository.salvarTokenRecuperacao(usuario.id, token, expiraEm);
+  await authRepository.salvarTokenRecuperacao(usuario.id, resumoDoToken(token), expiraEm);
   auditLogger.info('Recuperação de senha solicitada', { usuario_id: usuario.id });
 
-  return {
-    message: 'Se o e-mail existir, um link de recuperação foi gerado',
-    // Numa API real esse token nunca voltaria aqui, só por e-mail.
-    reset_token: token,
-    expira_em: expiraEm,
-  };
+  return resposta;
 }
 
 async function redefinirSenha(token, novaSenha) {
@@ -72,7 +73,7 @@ async function redefinirSenha(token, novaSenha) {
     throw { status: 400, message: 'A nova senha deve ter ao menos 6 caracteres' };
   }
 
-  const usuario = await authRepository.findByResetToken(token);
+  const usuario = await authRepository.findByResetToken(resumoDoToken(token));
   if (!usuario) {
     throw { status: 401, message: 'Token de recuperação inválido' };
   }

@@ -88,7 +88,7 @@ describe('POST /api/auth/recuperar-senha', () => {
     expect(res.status).toBe(400);
   });
 
-  it('retorna 200 com token quando o e-mail existe', async () => {
+  it('retorna 200 SEM devolver o token quando o e-mail existe', async () => {
     authRepository.findByEmail.mockResolvedValue(usuarioFake);
     authRepository.salvarTokenRecuperacao.mockResolvedValue();
 
@@ -97,8 +97,13 @@ describe('POST /api/auth/recuperar-senha', () => {
       .send({ email: usuarioFake.email });
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('reset_token');
-    expect(authRepository.salvarTokenRecuperacao).toHaveBeenCalled();
+    // O token só pode sair por e-mail: devolvê-lo aqui permitiria trocar a
+    // senha de qualquer pessoa sabendo apenas o e-mail dela.
+    expect(res.body.reset_token).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toMatch(/[0-9a-f]{64}/);
+    // No banco vai só o resumo SHA-256 (64 caracteres hexadecimais).
+    const [, tokenSalvo] = authRepository.salvarTokenRecuperacao.mock.calls[0];
+    expect(tokenSalvo).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('retorna 200 sem revelar se o e-mail não existe (evita enumeração)', async () => {
@@ -161,5 +166,9 @@ describe('POST /api/auth/redefinir-senha', () => {
 
     expect(res.status).toBe(200);
     expect(authRepository.redefinirSenha).toHaveBeenCalledWith(usuarioFake.id, 'novo_hash');
+    // A busca é feita pelo resumo do token, nunca pelo token em texto puro.
+    const [buscado] = authRepository.findByResetToken.mock.calls[0];
+    expect(buscado).toMatch(/^[0-9a-f]{64}$/);
+    expect(buscado).not.toBe('valido');
   });
 });
