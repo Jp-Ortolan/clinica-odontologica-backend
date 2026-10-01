@@ -99,9 +99,9 @@ async function deletar(id) {
 
 async function listarPacotes(esterilizacaoId) {
   const { rows } = await pool.query(
-    `SELECT p.*, m.nome AS material_nome
+    `SELECT p.*, COALESCE(p.nome,m.nome) AS material_nome
      FROM pacote_esterilizado p
-     JOIN material m ON m.id = p.material_id
+     LEFT JOIN material m ON m.id = p.material_id
      WHERE p.esterilizacao_id = $1
      ORDER BY p.criado_em`,
     [esterilizacaoId]
@@ -111,9 +111,9 @@ async function listarPacotes(esterilizacaoId) {
 
 async function buscarPacotePorId(id) {
   const { rows } = await pool.query(
-    `SELECT p.*, m.nome AS material_nome
+    `SELECT p.*, COALESCE(p.nome,m.nome) AS material_nome
      FROM pacote_esterilizado p
-     JOIN material m ON m.id = p.material_id
+     LEFT JOIN material m ON m.id = p.material_id
      WHERE p.id = $1`,
     [id]
   );

@@ -16,6 +16,7 @@ function gerarToken(perfil) {
 }
 
 const tokenProfessor = gerarToken('professor');
+const tokenCoordenador = gerarToken('coordenador');
 const tokenAluno = gerarToken('aluno');
 
 const eventos = [
@@ -26,15 +27,15 @@ const eventos = [
 describe('GET /api/logs', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('retorna 403 para perfil aluno (só professor/coordenador acessa)', async () => {
-    const res = await request(app).get('/api/logs').set('Authorization', `Bearer ${tokenAluno}`);
+  it.each([['aluno', tokenAluno], ['professor', tokenProfessor]])('retorna 403 para %s (só a coordenação acessa)', async (_, token) => {
+    const res = await request(app).get('/api/logs').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(403);
     expect(logRepository.listar).not.toHaveBeenCalled();
   });
 
   it('retorna os eventos no formato da tela (level, message, timestamp)', async () => {
     logRepository.listar.mockResolvedValue(eventos);
-    const res = await request(app).get('/api/logs').set('Authorization', `Bearer ${tokenProfessor}`);
+    const res = await request(app).get('/api/logs').set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual(eventos);
     expect(logRepository.listar).toHaveBeenCalledWith({ nivel: undefined, limite: 100 });
@@ -42,17 +43,17 @@ describe('GET /api/logs', () => {
 
   it('repassa o filtro de nível e limita a 500 eventos', async () => {
     logRepository.listar.mockResolvedValue([]);
-    await request(app).get('/api/logs?nivel=warn&limite=9999').set('Authorization', `Bearer ${tokenProfessor}`);
+    await request(app).get('/api/logs?nivel=warn&limite=9999').set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(logRepository.listar).toHaveBeenCalledWith({ nivel: 'warn', limite: 500 });
   });
 
   it('retorna 400 com nível inválido', async () => {
-    const res = await request(app).get('/api/logs?nivel=critico').set('Authorization', `Bearer ${tokenProfessor}`);
+    const res = await request(app).get('/api/logs?nivel=critico').set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(400);
   });
 
   it('retorna 400 com limite inválido', async () => {
-    const res = await request(app).get('/api/logs?limite=abc').set('Authorization', `Bearer ${tokenProfessor}`);
+    const res = await request(app).get('/api/logs?limite=abc').set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(400);
   });
 });

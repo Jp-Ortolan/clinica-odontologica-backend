@@ -22,7 +22,7 @@ async function buscarPorId(req, res, next) {
 
 async function criar(req, res, next) {
   try {
-    res.status(201).json(await usuarioService.criar(req.body, req.user));
+    res.status(201).json(await usuarioService.criar(req.body));
   } catch (err) {
     next(err);
   }
@@ -30,7 +30,7 @@ async function criar(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    res.status(200).json(await usuarioService.atualizar(req.params.id, req.body, req.user));
+    res.status(200).json(await usuarioService.atualizar(req.params.id, req.body));
   } catch (err) {
     next(err);
   }
@@ -44,4 +44,12 @@ async function deletar(req, res, next) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar };
+async function listarProfissionais(req, res, next) {
+  try {
+    const usuarios = await usuarioService.listar({ ativo: true });
+    res.json(usuarios.filter(u => ['coordenador', 'professor', 'aluno'].includes(u.perfil))
+      .map(({ id, nome, perfil, ativo }) => ({ id, nome, perfil, ativo })));
+  } catch (err) { next(err); }
+}
+
+module.exports = { listarProfissionais, listar, buscarPorId, criar, atualizar, deletar };

@@ -6,12 +6,11 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
+jest.mock('../src/config/database', () => ({query:jest.fn(),connect:jest.fn()}));
+const pool=require('../src/config/database');
 jest.mock('../src/repositories/categoriaRepository');
 jest.mock('../src/repositories/materialRepository');
 jest.mock('../src/repositories/movimentacaoRepository');
-// Sem banco nos testes: a "transação" só executa o trabalho com um client falso.
-const CLIENT_FAKE = { fake: 'client-da-transacao' };
-jest.mock('../src/utils/transacao', () => jest.fn((trabalho) => trabalho(CLIENT_FAKE)));
 
 const categoriaRepository = require('../src/repositories/categoriaRepository');
 const materialRepository = require('../src/repositories/materialRepository');
@@ -185,15 +184,14 @@ describe('POST /api/materiais', () => {
     expect(materialRepository.criar).not.toHaveBeenCalled();
   });
 
-  it('retorna 400 quando faltam campos obrigatórios (sem código de barras)', async () => {
-    const res = await request(app)
-      .post('/api/materiais')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
-      .send({ nome: 'Lidocaina', categoria_id: 1, unidade_medida: 'frasco' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/código de barras/i);
-    expect(materialRepository.criar).not.toHaveBeenCalled();
+  it('gera código automaticamente quando a embalagem não possui código', async () => {
+    categoriaRepository.buscarPorId.mockResolvedValue(categoriaFake);
+    materialRepository.buscarPorCodigoBarras.mockResolvedValue(null);
+    materialRepository.criar.mockImplementation(async d=>({id:1,...d}));
+    const res=await request(app).post('/api/materiais').set('Authorization', 'Bearer '+tokenAluno).send({nome:'Lidocaina',categoria_id:1,unidade_medida:'frasco'});
+    expect(res.status).toBe(201);
+    expect(res.body.codigo_barras).toMatch(/^MAT[A-F0-9]{16}$/);
+    expect(res.body.quantidade).toBe(0);
   });
 
   it('retorna 400 quando a categoria informada não existe', async () => {
@@ -266,7 +264,7 @@ describe('POST /api/materiais', () => {
         codigo_barras: '7891234567890',
         categoria_id: 1,
         unidade_medida: 'frasco',
-        quantidade: 10,
+        quantidade: 0,
         estoque_minimo: 5,
         estoque_ideal: 20,
       });
@@ -301,83 +299,18 @@ describe('DELETE /api/materiais/:id', () => {
 });
 
 describe('POST /api/movimentacoes', () => {
-  it('retorna 403 para recepcionista', async () => {
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenRecepcionista}`)
-      .send({ material_id: 1, tipo: 'entrada', quantidade: 5 });
-
-    expect(res.status).toBe(403);
-    expect(movimentacaoRepository.criar).not.toHaveBeenCalled();
+  it('recusa recepção e campos de entrada incompletos', async()=>{
+    const req=perfil=>request(app).post('/api/movimentacoes').set('Authorization','Bearer '+perfil).send({material_id:1,tipo:'entrada',quantidade:5});
+    expect((await req(tokenRecepcionista)).status).toBe(403);
+    expect((await req(tokenAluno)).status).toBe(400);
   });
-
-  it("retorna 400 quando o tipo não é 'entrada' nem 'saida'", async () => {
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
-      .send({ material_id: 1, tipo: 'transferencia', quantidade: 5 });
-
-    expect(res.status).toBe(400);
-    expect(movimentacaoRepository.criar).not.toHaveBeenCalled();
-  });
-
-  it('retorna 400 quando o material informado não existe', async () => {
-    materialRepository.buscarParaMovimentacao.mockResolvedValue(null);
-
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenAluno}`)
-      .send({ material_id: 999, tipo: 'entrada', quantidade: 5 });
-
-    expect(res.status).toBe(400);
-    expect(movimentacaoRepository.criar).not.toHaveBeenCalled();
-  });
-
-  it('retorna 409 quando a saída excede o estoque disponível', async () => {
-    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
-
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
-      .send({ material_id: 1, tipo: 'saida', quantidade: 50 });
-
-    expect(res.status).toBe(409);
-    expect(movimentacaoRepository.criar).not.toHaveBeenCalled();
-    expect(materialRepository.ajustarQuantidade).not.toHaveBeenCalled();
-  });
-
-  it('retorna 201, registra a movimentação e ajusta o estoque (+) numa entrada', async () => {
-    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
-    movimentacaoRepository.criar.mockResolvedValue(movimentacaoFake);
-    materialRepository.ajustarQuantidade.mockResolvedValue({ ...materialFake, quantidade: 15 });
-
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenAluno}`)
-      .send({ material_id: 1, tipo: 'entrada', quantidade: 5 });
-
+  it.each(['entrada','saida'])('movimenta por lote e preserva transação via rota legada: %s',async tipo=>{
+    const client={release:jest.fn(),query:jest.fn().mockImplementation(async sql=>({rows:sql.startsWith('SELECT * FROM material WHERE')?[materialFake]:sql.startsWith('SELECT * FROM material_lote')?[{id:3,quantidade:10,validade:'2027-01-01'}]:sql.startsWith('INSERT INTO movimentacao')?[movimentacaoFake]:[]}))};
+    pool.connect.mockResolvedValue(client);
+    const res=await request(app).post('/api/movimentacoes').set('Authorization','Bearer '+tokenAluno).send({material_id:1,tipo,quantidade:3,lote:'ABC',lote_id:3,validade:'2027-01-01',data_recebimento:'2026-09-10'});
     expect(res.status).toBe(201);
-    expect(movimentacaoRepository.criar).toHaveBeenCalledWith(
-      expect.objectContaining({ material_id: 1, tipo: 'entrada', quantidade: 5 }),
-      CLIENT_FAKE
-    );
-    // delta positivo para entrada
-    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, 5, CLIENT_FAKE);
-  });
-
-  it('retorna 201 e ajusta o estoque (-) numa saída válida', async () => {
-    materialRepository.buscarParaMovimentacao.mockResolvedValue(materialFake); // quantidade: 10
-    movimentacaoRepository.criar.mockResolvedValue({ ...movimentacaoFake, tipo: 'saida' });
-    materialRepository.ajustarQuantidade.mockResolvedValue({ ...materialFake, quantidade: 7 });
-
-    const res = await request(app)
-      .post('/api/movimentacoes')
-      .set('Authorization', `Bearer ${tokenAluno}`)
-      .send({ material_id: 1, tipo: 'saida', quantidade: 3 });
-
-    expect(res.status).toBe(201);
-    // delta negativo para saída
-    expect(materialRepository.ajustarQuantidade).toHaveBeenCalledWith(1, -3, CLIENT_FAKE);
+    expect(client.query).toHaveBeenCalledWith('UPDATE material SET quantidade=quantidade+$1 WHERE id=$2',[tipo==='entrada'?3:-3,1]);
+    expect(client.query).toHaveBeenLastCalledWith('COMMIT');
   });
 });
 

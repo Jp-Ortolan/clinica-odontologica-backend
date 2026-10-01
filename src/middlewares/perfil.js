@@ -3,8 +3,8 @@
 // precisa do req.user que ele preenche a partir do token.
 //
 // Perfis do sistema:
-// - coordenador   → tudo o que o professor pode (herda as permissões dele)
-// - professor     → acesso total aos módulos clínicos e administrativos
+// - coordenador   → administração (usuários, logs, permissões) + acesso clínico
+// - professor     → acesso clínico completo (sem a administração do sistema)
 // - aluno         → consultas e cirurgias sob supervisão, estoque e CME
 // - recepcionista → agendamento e cadastro de pacientes
 //
@@ -14,19 +14,9 @@
 
 const PERFIS = ['coordenador', 'professor', 'aluno', 'recepcionista'];
 
-// Perfis que herdam automaticamente o acesso de outro perfil.
-const HERANCA = { coordenador: 'professor' };
-
-function perfisEfetivos(perfisPermitidos) {
-  const lista = new Set(perfisPermitidos);
-  Object.entries(HERANCA).forEach(([perfil, herdaDe]) => {
-    if (lista.has(herdaDe)) lista.add(perfil);
-  });
-  return PERFIS.filter((p) => lista.has(p));
-}
-
 function autorizar(...perfisPermitidos) {
-  const perfis = perfisEfetivos(perfisPermitidos);
+  // Cada rota lista explicitamente os perfis aceitos (sem herança implícita).
+  const perfis = PERFIS.filter((p) => perfisPermitidos.includes(p));
 
   const middleware = (req, res, next) => {
     const perfilUsuario = req.user?.perfil;

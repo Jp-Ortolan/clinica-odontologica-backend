@@ -3,6 +3,7 @@ const consultaService = require('../services/consultaService');
 async function listar(req, res, next) {
   try {
     const filtros = {};
+    if (req.user.perfil === 'aluno') filtros.aluno_id = req.user.id;
     if (req.query.status) filtros.status = req.query.status;
     if (req.query.disciplina) filtros.disciplina = req.query.disciplina;
     const consultas = await consultaService.listar(filtros);

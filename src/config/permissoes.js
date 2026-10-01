@@ -15,13 +15,17 @@ const MODULOS_IGNORADOS = ['auth'];
 
 const DESCRICOES = {
   usuarios: 'Gestão de usuários do sistema',
+  'usuarios.profissionais': 'Lista de professores e alunos (sem CPF/e-mail), para agendas',
   pacientes: 'Cadastro e prontuário de pacientes',
+  'pacientes.saude': 'Declaração de saúde (alergias e medicamentos)',
+  'pacientes.historico': 'Histórico clínico do paciente',
   'pacientes.alergias': 'Alergias do paciente',
   'pacientes.medicamentos': 'Medicamentos em uso pelo paciente',
   'pacientes.documentos': 'Upload/download de documentos do paciente',
   'pacientes.evolucoes': 'Prontuário / evolução clínica',
   consultas: 'Agenda de consultas',
   'consultas.materiais': 'Materiais previstos para a consulta',
+  'consultas.alunos': 'Equipe de alunos da consulta',
   cirurgias: 'Agenda de cirurgias',
   'cirurgias.mutiroes': 'Mutirões cirúrgicos',
   'cirurgias.alunos': 'Compartilhamento de cursos (alunos vinculados)',
@@ -36,6 +40,11 @@ const DESCRICOES = {
   logs: 'Logs e auditoria do sistema',
   permissoes: 'Matriz de permissões',
   dashboard: 'Dashboard e relatórios',
+  rastreabilidade: 'Rastreabilidade (lotes, pacotes CME e observações)',
+  'rastreabilidade.materiais': 'Entradas e saídas de estoque por lote',
+  'rastreabilidade.pacotes': 'Preparo, esterilização e liberação de pacotes CME',
+  'rastreabilidade.consulta': 'Observações clínicas da consulta',
+  'rastreabilidade.cirurgia': 'Observações clínicas da cirurgia',
 };
 
 // '/pacientes' + '/:id/documentos/:documentoId/download' → 'pacientes.documentos'
@@ -48,9 +57,12 @@ function nomeModulo(prefixo, caminho) {
   return base;
 }
 
-function perfisDaRota(route) {
+// Perfis aceitos por uma rota. Vale o `autorizar(...)` da própria rota ou,
+// se não houver, o aplicado no arquivo inteiro com router.use(auth, autorizar(...)).
+function perfisDaRota(route, padraoDoRouter) {
   const autorizacao = route.stack.find((camada) => Array.isArray(camada.handle.perfis));
   if (autorizacao) return autorizacao.handle.perfis;
+  if (padraoDoRouter) return padraoDoRouter;
   const exigeLogin = route.stack.some((camada) => camada.handle.name === 'autenticar');
   return exigeLogin ? PERFIS : null; // só autenticada → todos os perfis
 }
@@ -61,9 +73,10 @@ function obterMatriz() {
   const porModulo = new Map();
 
   MODULOS.forEach(([prefixo, router]) => {
+    const padraoDoRouter = router.stack.find((c) => !c.route && Array.isArray(c.handle.perfis))?.handle.perfis;
     router.stack.filter((camada) => camada.route).forEach(({ route }) => {
       const modulo = nomeModulo(prefixo, route.path);
-      const perfis = perfisDaRota(route);
+      const perfis = perfisDaRota(route, padraoDoRouter);
       if (!perfis || MODULOS_IGNORADOS.includes(modulo)) return;
 
       if (!porModulo.has(modulo)) {

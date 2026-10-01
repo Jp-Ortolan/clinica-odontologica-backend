@@ -22,14 +22,14 @@ curl https://clinica-odontologica-backend-production.up.railway.app/api/paciente
 
 ## Perfis e controle de acesso
 
-O sistema tem três perfis, e cada rota declara quais deles podem acessá-la
+O sistema tem quatro perfis, e cada rota declara quais deles podem acessá-la
 (middleware `perfil.js`). Uma chamada com perfil não autorizado recebe
 `403 Acesso negado`.
 
 | Perfil | Escopo |
 |---|---|
-| `coordenador` | Tudo o que o professor pode, e é o único que gerencia contas de coordenador |
-| `professor` | Acesso amplo, incluindo exclusões, logs e gestão de usuários |
+| `coordenador` | Administração (usuários, logs, permissões) + todo o acesso clínico do professor |
+| `professor` | Acesso clínico completo: supervisão, exclusões clínicas, liberação de pacotes CME |
 | `aluno` | Atendimento clínico, estoque e CME |
 | `recepcionista` | Agendamento, cadastro de pacientes e documentos |
 
@@ -45,9 +45,10 @@ Regras que valem a pena destacar:
 - **Histórico de estoque é imutável**: movimentação não é editada nem
   apagada; corrija com uma movimentação inversa.
 - Onde a coluna "Quem pode" cita `professor`, o `coordenador` também pode.
+- **Administração** (usuários, logs, permissões, `/metrics`) é só do coordenador.
 - A tabela sempre atualizada é `GET /api/permissoes`, montada a partir
   das próprias rotas.
-- **Exclusões** (`DELETE`) são quase todas exclusivas do professor.
+- **Exclusões** (`DELETE`) são quase todas exclusivas de professor/coordenador.
 - **Notificações** são individuais: cada usuário só lê e altera as suas.
 
 ## Códigos de resposta
@@ -72,19 +73,20 @@ Regras que valem a pena destacar:
 | Método | Rota | Quem pode | O que faz |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | **público** | Autentica e devolve o token JWT + dados do usuário |
-| `POST` | `/api/auth/recuperar-senha` | **público** | Inicia a recuperação de senha (o token/código nunca volta na resposta) |
-| `POST` | `/api/auth/redefinir-senha` | **público** | Define a nova senha usando o token recebido |
+| `POST` | `/api/auth/recuperar-senha` | **público** | `{ email }` — envia um código de 6 dígitos por e-mail (vale 10 min; o código nunca volta na resposta; 503 se o e-mail não estiver configurado) |
+| `POST` | `/api/auth/redefinir-senha` | **público** | `{ email, codigo, nova_senha }` — até 5 tentativas por código |
 | `GET` | `/api/auth/me` | qualquer autenticado | Dados do usuário logado (valida se o token ainda vale) |
 
 ### Usuários  ·  `/api/usuarios`
 
 | Método | Rota | Quem pode | O que faz |
 |---|---|---|---|
-| `GET` | `/api/usuarios` | professor, recepcionista | Lista todos os usuários do sistema |
-| `GET` | `/api/usuarios/:id` | professor, recepcionista | Dados de um usuário |
-| `POST` | `/api/usuarios` | professor | Cadastra usuário (define perfil e senha inicial) |
-| `PUT` | `/api/usuarios/:id` | professor | Edita cadastro, troca o perfil ou ativa/desativa |
-| `DELETE` | `/api/usuarios/:id` | professor | Remove o usuário em definitivo |
+| `GET` | `/api/usuarios/profissionais` | qualquer autenticado | Professores, coordenadores e alunos ativos (só id, nome e perfil — sem CPF/e-mail) |
+| `GET` | `/api/usuarios` | coordenador | Lista todos os usuários do sistema |
+| `GET` | `/api/usuarios/:id` | coordenador | Dados de um usuário |
+| `POST` | `/api/usuarios` | coordenador | Cadastra usuário (define perfil e senha inicial) |
+| `PUT` | `/api/usuarios/:id` | coordenador | Edita cadastro, troca o perfil ou ativa/desativa |
+| `DELETE` | `/api/usuarios/:id` | coordenador | Remove o usuário (409 se ele tiver histórico; nesse caso, desative) |
 
 ### Pacientes  ·  `/api/pacientes`
 
@@ -93,21 +95,24 @@ Regras que valem a pena destacar:
 | `GET` | `/api/pacientes` | aluno, professor, recepcionista | Lista pacientes (aceita `?ativo=true|false`) |
 | `GET` | `/api/pacientes/cep/:cep` | qualquer autenticado | Busca endereço pelo CEP (via ViaCEP) |
 | `GET` | `/api/pacientes/:id` | aluno, professor, recepcionista | Ficha do paciente |
-| `POST` | `/api/pacientes` | professor, recepcionista | Cadastra paciente |
-| `PUT` | `/api/pacientes/:id` | professor, recepcionista | Edita o cadastro |
+| `POST` | `/api/pacientes` | professor, recepcionista | Cadastra paciente com a declaração de saúde (`saude`) |
+| `PUT` | `/api/pacientes/:id` | aluno, professor, recepcionista | Edita o cadastro |
 | `PATCH` | `/api/pacientes/:id/status` | professor, recepcionista | Ativa ou inativa o paciente |
 | `GET` | `/api/pacientes/:id/alergias` | aluno, professor, recepcionista | Alergias registradas |
 | `POST` | `/api/pacientes/:id/alergias` | aluno, professor, recepcionista | Registra alergia (substância e gravidade) |
-| `DELETE` | `/api/pacientes/:id/alergias/:alergiaId` | professor, aluno | Remove a alergia |
+| `DELETE` | `/api/pacientes/:id/alergias/:alergiaId` | professor | Remove a alergia |
 | `GET` | `/api/pacientes/:id/medicamentos` | aluno, professor, recepcionista | Medicamentos em uso |
 | `POST` | `/api/pacientes/:id/medicamentos` | aluno, professor, recepcionista | Registra medicamento em uso |
-| `DELETE` | `/api/pacientes/:id/medicamentos/:medicamentoId` | professor, aluno | Remove o medicamento |
+| `DELETE` | `/api/pacientes/:id/medicamentos/:medicamentoId` | professor | Remove o medicamento |
 | `GET` | `/api/pacientes/:id/documentos` | aluno, professor, recepcionista | Lista documentos anexados |
-| `POST` | `/api/pacientes/:id/documentos` | professor, recepcionista | Anexa documento (arquivo de até 8 MB, enviado em base64) |
+| `POST` | `/api/pacientes/:id/documentos` | recepcionista | Anexa documento (arquivo de até 8 MB, enviado em base64) |
 | `GET` | `/api/pacientes/:id/documentos/:documentoId/download` | aluno, professor, recepcionista | Baixa o arquivo |
 | `DELETE` | `/api/pacientes/:id/documentos/:documentoId` | professor | Remove o documento |
 | `GET` | `/api/pacientes/:id/evolucoes` | professor, aluno | Prontuário / evolução clínica |
 | `POST` | `/api/pacientes/:id/evolucoes` | professor, aluno | Registra evolução clínica |
+| `GET` | `/api/pacientes/:id/saude` | aluno, professor, recepcionista | Declaração de saúde: alergias, medicamentos e `saude_versao` |
+| `PUT` | `/api/pacientes/:id/saude` | aluno, professor, recepcionista | Atualiza a declaração (envie a `saude_versao` lida; 409 se outra pessoa alterou antes). Só professor/coordenador remove ou altera itens já registrados |
+| `GET` | `/api/pacientes/:id/historico` | aluno, professor, recepcionista | Linha do tempo: consultas, cirurgias, evoluções e documentos |
 
 ### Consultas  ·  `/api/consultas`
 
@@ -123,6 +128,11 @@ Regras que valem a pena destacar:
 | `POST` | `/api/consultas/:id/materiais` | professor, aluno | Adiciona material ao checklist |
 | `PUT` | `/api/consultas/:id/materiais/:materialVinculoId` | professor, aluno | Altera a quantidade prevista |
 | `DELETE` | `/api/consultas/:id/materiais/:materialVinculoId` | professor, aluno | Remove o material do checklist |
+| `GET` | `/api/consultas/:id/alunos` | aluno, professor, recepcionista | Equipe de alunos da consulta |
+| `PUT` | `/api/consultas/:id/alunos` | professor responsável, coordenador | `{ alunos_ids: [...] }` — define a equipe e notifica os alunos novos |
+
+`usuario_id` da consulta é o **professor responsável** (supervisor). Aluno vê
+na agenda só as consultas em que é responsável ou está na equipe.
 
 ### Cirurgias e mutirões  ·  `/api/cirurgias`
 
@@ -175,8 +185,24 @@ Regras que valem a pena destacar:
 |---|---|---|---|
 | `GET` | `/api/movimentacoes` | professor, aluno | Histórico de entradas e saídas (aceita `?material_id=`) |
 | `GET` | `/api/movimentacoes/:id` | professor, aluno | Dados da movimentação |
-| `POST` | `/api/movimentacoes` | professor, aluno | Registra entrada ou saída e ajusta o estoque |
+| `POST` | `/api/movimentacoes` | professor, aluno | Rota antiga: repassa para `/api/rastreabilidade/materiais/:id/movimentos` (por lote) |
 | `PUT` / `DELETE` | `/api/movimentacoes/:id` | professor, aluno | Bloqueado (405) — o histórico de estoque é imutável |
+
+### Rastreabilidade: estoque por lote, pacotes CME e observações  ·  `/api/rastreabilidade`
+
+Todas as rotas: aluno, professor e coordenador.
+
+| Método | Rota | O que faz |
+|---|---|---|
+| `GET` | `/api/rastreabilidade/materiais/:id/lotes` | Lotes do material, com saldo e validade |
+| `POST` | `/api/rastreabilidade/materiais/:id/movimentos` | Entrada (`lote`, `validade`, `data_recebimento`) ou saída (`lote_id`). Atualiza saldo do lote, saldo total e histórico numa única transação |
+| `GET` | `/api/rastreabilidade/pacotes` | Lista pacotes CME |
+| `POST` | `/api/rastreabilidade/pacotes` | Prepara pacote com vários instrumentais (`nome`, `itens: [{material_id, quantidade}]`) |
+| `GET` | `/api/rastreabilidade/pacotes/:id` | Pacote com itens e histórico de eventos |
+| `POST` | `/api/rastreabilidade/pacotes/:id/processar` | `acao`: `iniciar` (com `ciclo_id`), `liberar` (só professor/coordenador; exige ciclo concluído e controles aprovados) ou `utilizar` |
+| `GET` | `/api/rastreabilidade/pacotes/:id/etiqueta` | Etiqueta com QR Code (só depois de liberado) |
+| `GET` / `POST` | `/api/rastreabilidade/consulta/:id/observacoes` | Observações clínicas da consulta (aluno só se estiver na equipe) |
+| `GET` / `POST` | `/api/rastreabilidade/cirurgia/:id/observacoes` | Observações clínicas da cirurgia |
 
 ### Esterilização (CME)  ·  `/api/esterilizacoes`
 
@@ -220,13 +246,13 @@ Regras que valem a pena destacar:
 
 | Método | Rota | Quem pode | O que faz |
 |---|---|---|---|
-| `GET` | `/api/logs` | professor | Log de auditoria (aceita `?nivel=` e `?limite=`) |
+| `GET` | `/api/logs` | coordenador | Log de auditoria (tabela log_auditoria) (aceita `?nivel=` e `?limite=`) |
 
 ### Permissões  ·  `/api/permissoes`
 
 | Método | Rota | Quem pode | O que faz |
 |---|---|---|---|
-| `GET` | `/api/permissoes` | professor | Matriz de permissões por perfil (aceita `?perfil=`) |
+| `GET` | `/api/permissoes` | coordenador | Matriz de permissões por perfil (aceita `?perfil=`) |
 
 ---
 
@@ -242,4 +268,4 @@ ser gravado deslocado.
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/health` | Verificação de disponibilidade — `{"status":"ok"}` |
-| `GET` | `/metrics` | Uptime, requisições, memória e versão do Node — exige token de professor/coordenador |
+| `GET` | `/metrics` | Uptime, requisições, memória e versão do Node — exige token de coordenador |

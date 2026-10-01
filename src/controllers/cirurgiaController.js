@@ -3,6 +3,7 @@ const cirurgiaService = require('../services/cirurgiaService');
 async function listar(req, res, next) {
   try {
     const filtros = {};
+    if (req.user.perfil === 'aluno') filtros.aluno_id = req.user.id;
     if (req.query.status) filtros.status = req.query.status;
     if (req.query.mutirao_id) filtros.mutirao_id = req.query.mutirao_id;
     const cirurgias = await cirurgiaService.listar(filtros);

@@ -63,8 +63,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Métricas básicas — só para professor/coordenador (expõe versão e ambiente).
-app.get('/metrics', auth, autorizar('professor'), (req, res) => {
+// Métricas básicas — só para a coordenação (expõe versão e ambiente).
+app.get('/metrics', auth, autorizar('coordenador'), (req, res) => {
   const uptimeSeconds = Math.floor((Date.now() - metricas.startTime) / 1000);
   res.status(200).json({
     status: 'ok',

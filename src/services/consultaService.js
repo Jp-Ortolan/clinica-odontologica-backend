@@ -48,6 +48,14 @@ async function buscarPorId(id) {
   return consulta;
 }
 
+async function validarResponsavel(id) {
+  const usuario = await require('../repositories/usuarioRepository').buscarPorId(id);
+  if (!usuario || usuario.ativo === false || !['professor', 'coordenador'].includes(usuario.perfil)) {
+    throw { status: 400, message: 'Selecione um professor ou coordenador ativo como responsável pela disciplina.' };
+  }
+  return usuario;
+}
+
 async function criar(dados) {
   const { paciente_id, usuario_id, data_hora } = dados;
 
@@ -75,14 +83,11 @@ async function criar(dados) {
   const paciente = await pacienteRepository.buscarPorId(paciente_id);
   if (!paciente) throw { status: 404, message: 'Paciente não encontrado' };
 
+  await validarResponsavel(usuario_id);
+  if (!dados.disciplina) throw { status: 400, message: 'Disciplina é obrigatória.' };
   const consulta = await consultaRepository.criar(dados);
   auditLogger.info('Consulta agendada', { consulta_id: consulta.id, paciente_id, usuario_id });
 
-  await eventos.consultaAgendada(usuario_id, {
-    pacienteNome: paciente.nome,
-    quandoFormatado: formatarDataHora(data_hora),
-    consultaId: consulta.id,
-  });
 
   return consulta;
 }
@@ -104,6 +109,7 @@ async function atualizar(id, dados) {
     if (!paciente) throw { status: 404, message: 'Paciente não encontrado' };
   }
 
+  if (dados.usuario_id && String(dados.usuario_id) !== String(consulta.usuario_id)) await validarResponsavel(dados.usuario_id);
   const dadosAtualizados = {
     paciente_id: dados.paciente_id ?? consulta.paciente_id,
     usuario_id: dados.usuario_id ?? consulta.usuario_id,

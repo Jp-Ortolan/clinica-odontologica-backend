@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../src/repositories/consultaRepository');
 jest.mock('../src/repositories/pacienteRepository');
+jest.mock('../src/repositories/usuarioRepository');
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
   hash: jest.fn(),
@@ -15,6 +16,7 @@ jest.mock('bcrypt', () => ({
 const consultaRepository = require('../src/repositories/consultaRepository');
 const pacienteRepository = require('../src/repositories/pacienteRepository');
 const app = require('../src/app');
+beforeEach(() => require('../src/repositories/usuarioRepository').buscarPorId.mockResolvedValue({ id: 1, perfil: 'professor', ativo: true }));
 
 function gerarToken(perfil) {
   return jwt.sign(
@@ -88,15 +90,13 @@ describe('GET /api/consultas/:id', () => {
 describe('POST /api/consultas', () => {
   afterEach(() => jest.clearAllMocks());
 
-  // Desde 06/08 a recepção também agenda consultas (é ela quem marca).
-  it('retorna 201 quando a recepcionista agenda uma consulta', async () => {
+  it('recepcionista agenda com professor responsável pela disciplina', async () => {
     pacienteRepository.buscarPorId.mockResolvedValue(pacienteFake);
     consultaRepository.criar.mockResolvedValue(consultaFake);
-
     const res = await request(app)
       .post('/api/consultas')
       .set('Authorization', `Bearer ${tokenRecepcionista}`)
-      .send({ paciente_id: 1, usuario_id: 1, data_hora: '2026-08-01T10:00:00.000Z' });
+      .send({ paciente_id: 1, usuario_id: 1, data_hora: '2026-08-01T10:00:00.000Z', disciplina: 'Endodontia' });
 
     expect(res.status).toBe(201);
     expect(consultaRepository.criar).toHaveBeenCalled();
@@ -153,6 +153,7 @@ describe('POST /api/consultas', () => {
         usuario_id: consultaFake.usuario_id,
         data_hora: consultaFake.data_hora,
         queixa_principal: consultaFake.queixa_principal,
+        disciplina: 'Endodontia',
       });
 
     expect(res.status).toBe(201);

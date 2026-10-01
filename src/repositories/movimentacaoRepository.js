@@ -3,10 +3,11 @@
 const pool = require('../config/database');
 
 const SELECT_BASE = `
-  SELECT mv.*, m.nome AS material_nome, u.nome AS usuario_nome
+  SELECT mv.*, m.nome AS material_nome, u.nome AS usuario_nome, l.lote AS lote_nome, l.validade AS lote_validade
   FROM movimentacao_estoque mv
   JOIN material m ON m.id = mv.material_id
   JOIN usuario u ON u.id = mv.usuario_id
+  LEFT JOIN material_lote l ON l.id = mv.lote_id
 `;
 
 async function listar(filtros = {}) {
@@ -31,21 +32,11 @@ async function listar(filtros = {}) {
   return result.rows;
 }
 
-async function buscarPorId(id, db = pool) {
-  const result = await db.query(`${SELECT_BASE} WHERE mv.id = $1`, [id]);
+async function buscarPorId(id) {
+  const result = await pool.query(`${SELECT_BASE} WHERE mv.id = $1`, [id]);
   return result.rows[0] || null;
 }
 
-async function criar(dados, db = pool) {
-  const { material_id, usuario_id, tipo, quantidade, observacao } = dados;
-  const result = await db.query(
-    `INSERT INTO movimentacao_estoque (material_id, usuario_id, tipo, quantidade, observacao)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id`,
-    [material_id, usuario_id, tipo, quantidade, observacao ?? null]
-  );
-  return buscarPorId(result.rows[0].id, db);
-}
 
 
-module.exports = { listar, buscarPorId, criar };
+module.exports = { listar, buscarPorId };

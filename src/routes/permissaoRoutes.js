@@ -5,6 +5,6 @@ const auth = require('../middlewares/auth');
 const autorizar = require('../middlewares/perfil');
 
 // GET /api/permissoes?perfil=aluno → apenas professor
-router.get('/', auth, autorizar('professor'), permissaoController.listar);
+router.get('/', auth, autorizar('coordenador'), permissaoController.listar);
 
 module.exports = router;
