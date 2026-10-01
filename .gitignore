@@ -15,3 +15,6 @@ docs/
 
 # Dumps gerados pelo serviço de backup automático (docker-compose)
 backups/
+
+# PDFs de apoio/entrega (ex.: Integracao_Frontend_Passo_a_Passo.pdf)
+*.pdf

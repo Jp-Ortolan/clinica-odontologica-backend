@@ -28,6 +28,7 @@ O sistema tem três perfis, e cada rota declara quais deles podem acessá-la
 
 | Perfil | Escopo |
 |---|---|
+| `coordenador` | Tudo o que o professor pode, e é o único que gerencia contas de coordenador |
 | `professor` | Acesso amplo, incluindo exclusões, logs e gestão de usuários |
 | `aluno` | Atendimento clínico, estoque e CME |
 | `recepcionista` | Agendamento, cadastro de pacientes e documentos |
@@ -36,9 +37,16 @@ Regras que valem a pena destacar:
 
 - **Estoque e CME** são fechados para a recepção — ela não repõe material nem
   opera a autoclave.
-- **Prontuário** (evolução clínica e medicamentos em uso) é restrito a
-  professor e aluno. A recepção pode registrar alergia, informação que o
-  paciente costuma dar no balcão.
+- **Prontuário** (evolução clínica) é restrito a professor e aluno. A
+  recepção pode registrar alergias e medicamentos em uso, que o paciente
+  informa no balcão.
+- **Pacientes não são excluídos** (guarda obrigatória do prontuário): use
+  `PATCH /api/pacientes/:id/status` para inativar.
+- **Histórico de estoque é imutável**: movimentação não é editada nem
+  apagada; corrija com uma movimentação inversa.
+- Onde a coluna "Quem pode" cita `professor`, o `coordenador` também pode.
+- A tabela sempre atualizada é `GET /api/permissoes`, montada a partir
+  das próprias rotas.
 - **Exclusões** (`DELETE`) são quase todas exclusivas do professor.
 - **Notificações** são individuais: cada usuário só lê e altera as suas.
 
@@ -51,7 +59,11 @@ Regras que valem a pena destacar:
 | `401` | Token ausente, inválido ou expirado |
 | `403` | Perfil sem permissão para a rota |
 | `404` | Registro não encontrado |
-| `409` | Conflito (CPF duplicado, estoque insuficiente, vínculo repetido) |
+| `405` | Operação bloqueada por regra (ex.: editar/apagar movimentação) |
+| `409` | Conflito (CPF duplicado, estoque insuficiente, registro vinculado a outros dados) |
+| `413` | Arquivo ou corpo da requisição grande demais (limite 12 MB) |
+| `429` | Muitas tentativas de login/recuperação; aguarde alguns minutos |
+| `500` | Erro interno (detalhes ficam só no log do servidor) |
 
 ## Endpoints
 
@@ -60,7 +72,7 @@ Regras que valem a pena destacar:
 | Método | Rota | Quem pode | O que faz |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | **público** | Autentica e devolve o token JWT + dados do usuário |
-| `POST` | `/api/auth/recuperar-senha` | **público** | Gera token de recuperação de senha |
+| `POST` | `/api/auth/recuperar-senha` | **público** | Inicia a recuperação de senha (o token/código nunca volta na resposta) |
 | `POST` | `/api/auth/redefinir-senha` | **público** | Define a nova senha usando o token recebido |
 | `GET` | `/api/auth/me` | qualquer autenticado | Dados do usuário logado (valida se o token ainda vale) |
 
@@ -84,15 +96,14 @@ Regras que valem a pena destacar:
 | `POST` | `/api/pacientes` | professor, recepcionista | Cadastra paciente |
 | `PUT` | `/api/pacientes/:id` | professor, recepcionista | Edita o cadastro |
 | `PATCH` | `/api/pacientes/:id/status` | professor, recepcionista | Ativa ou inativa o paciente |
-| `DELETE` | `/api/pacientes/:id` | professor | Remove o paciente |
 | `GET` | `/api/pacientes/:id/alergias` | aluno, professor, recepcionista | Alergias registradas |
 | `POST` | `/api/pacientes/:id/alergias` | aluno, professor, recepcionista | Registra alergia (substância e gravidade) |
 | `DELETE` | `/api/pacientes/:id/alergias/:alergiaId` | professor, aluno | Remove a alergia |
 | `GET` | `/api/pacientes/:id/medicamentos` | aluno, professor, recepcionista | Medicamentos em uso |
-| `POST` | `/api/pacientes/:id/medicamentos` | professor, aluno | Registra medicamento em uso |
+| `POST` | `/api/pacientes/:id/medicamentos` | aluno, professor, recepcionista | Registra medicamento em uso |
 | `DELETE` | `/api/pacientes/:id/medicamentos/:medicamentoId` | professor, aluno | Remove o medicamento |
 | `GET` | `/api/pacientes/:id/documentos` | aluno, professor, recepcionista | Lista documentos anexados |
-| `POST` | `/api/pacientes/:id/documentos` | professor, recepcionista | Anexa documento (arquivo em base64, até 10MB) |
+| `POST` | `/api/pacientes/:id/documentos` | professor, recepcionista | Anexa documento (arquivo de até 8 MB, enviado em base64) |
 | `GET` | `/api/pacientes/:id/documentos/:documentoId/download` | aluno, professor, recepcionista | Baixa o arquivo |
 | `DELETE` | `/api/pacientes/:id/documentos/:documentoId` | professor | Remove o documento |
 | `GET` | `/api/pacientes/:id/evolucoes` | professor, aluno | Prontuário / evolução clínica |
@@ -165,8 +176,7 @@ Regras que valem a pena destacar:
 | `GET` | `/api/movimentacoes` | professor, aluno | Histórico de entradas e saídas (aceita `?material_id=`) |
 | `GET` | `/api/movimentacoes/:id` | professor, aluno | Dados da movimentação |
 | `POST` | `/api/movimentacoes` | professor, aluno | Registra entrada ou saída e ajusta o estoque |
-| `PUT` | `/api/movimentacoes/:id` | professor, aluno | Bloqueado por design — movimentação é imutável |
-| `DELETE` | `/api/movimentacoes/:id` | professor | Remove e desfaz o efeito no estoque |
+| `PUT` / `DELETE` | `/api/movimentacoes/:id` | professor, aluno | Bloqueado (405) — o histórico de estoque é imutável |
 
 ### Esterilização (CME)  ·  `/api/esterilizacoes`
 
@@ -232,4 +242,4 @@ ser gravado deslocado.
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/health` | Verificação de disponibilidade — `{"status":"ok"}` |
-| `GET` | `/metrics` | Uptime, total de requisições, memória e versão do Node |
+| `GET` | `/metrics` | Uptime, requisições, memória e versão do Node — exige token de professor/coordenador |
