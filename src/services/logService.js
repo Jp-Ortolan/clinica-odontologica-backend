@@ -1,28 +1,12 @@
-// Lê o arquivo de auditoria (logs/audit.log, gerado pelo Winston) e
-// devolve os eventos mais recentes por API — antes só dava pra ver
-// abrindo o arquivo direto.
+// Eventos de auditoria para a tela "Logs/Auditoria" (GET /api/logs).
+// Lidos da tabela log_auditoria — o arquivo logs/audit.log some a cada
+// deploy no Railway, a tabela não.
 
-const fs = require('fs');
-const path = require('path');
+const logRepository = require('../repositories/logRepository');
 
-const CAMINHO_AUDIT_LOG = path.join(__dirname, '..', '..', 'logs', 'audit.log');
 const NIVEIS_VALIDOS = ['info', 'warn', 'error'];
-
-function lerLinhas(caminho) {
-  if (!fs.existsSync(caminho)) return [];
-  const conteudo = fs.readFileSync(caminho, 'utf8');
-  return conteudo
-    .split('\n')
-    .filter((linha) => linha.trim().length > 0)
-    .map((linha) => {
-      try {
-        return JSON.parse(linha);
-      } catch {
-        return null; // ignora linhas corrompidas/incompletas
-      }
-    })
-    .filter(Boolean);
-}
+const LIMITE_PADRAO = 100;
+const LIMITE_MAXIMO = 500;
 
 async function listarAuditoria(filtros = {}) {
   const { nivel, limite } = filtros;
@@ -31,17 +15,12 @@ async function listarAuditoria(filtros = {}) {
     throw { status: 400, message: `Nível inválido. Use um de: ${NIVEIS_VALIDOS.join(', ')}` };
   }
 
-  const limiteNumero = limite ? Number(limite) : 100;
-  if (Number.isNaN(limiteNumero) || limiteNumero <= 0) {
-    throw { status: 400, message: 'Limite deve ser um número positivo' };
+  const limiteNumero = limite ? Number(limite) : LIMITE_PADRAO;
+  if (!Number.isInteger(limiteNumero) || limiteNumero <= 0) {
+    throw { status: 400, message: 'Limite deve ser um número inteiro positivo' };
   }
 
-  let eventos = lerLinhas(CAMINHO_AUDIT_LOG);
-  if (nivel) eventos = eventos.filter((e) => e.level === nivel);
-
-  // Mais recentes primeiro
-  eventos.reverse();
-  return eventos.slice(0, Math.min(limiteNumero, 500));
+  return logRepository.listar({ nivel, limite: Math.min(limiteNumero, LIMITE_MAXIMO) });
 }
 
 module.exports = { listarAuditoria };
