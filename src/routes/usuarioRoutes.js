@@ -8,18 +8,20 @@ const autorizar = require('../middlewares/perfil');
 // Algumas exigem também um perfil específico (autorizar)
 
 // GET /api/usuarios → apenas admin e recepcionista
-router.get('/', auth, autorizar('professor', 'recepcionista'), usuarioController.listar);
+router.get('/profissionais', auth, autorizar('coordenador', 'professor', 'aluno', 'recepcionista'), usuarioController.listarProfissionais);
+
+router.get('/', auth, autorizar('coordenador'), usuarioController.listar);
 
 // GET /api/usuarios/:id → professor e recepcionista
-router.get('/:id', auth, autorizar('professor', 'recepcionista'), usuarioController.buscarPorId);
+router.get('/:id', auth, autorizar('coordenador'), usuarioController.buscarPorId);
 
 // POST /api/usuarios → apenas admin
-router.post('/', auth, autorizar('professor'), usuarioController.criar);
+router.post('/', auth, autorizar('coordenador'), usuarioController.criar);
 
 // PUT /api/usuarios/:id → apenas admin
-router.put('/:id', auth, autorizar('professor'), usuarioController.atualizar);
+router.put('/:id', auth, autorizar('coordenador'), usuarioController.atualizar);
 
 // DELETE /api/usuarios/:id → apenas admin
-router.delete('/:id', auth, autorizar('professor'), usuarioController.deletar);
+router.delete('/:id', auth, autorizar('coordenador'), usuarioController.deletar);
 
 module.exports = router;

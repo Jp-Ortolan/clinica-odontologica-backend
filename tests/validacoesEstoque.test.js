@@ -7,7 +7,6 @@ const {
   ehDataValida,
   validarCamposObrigatoriosMaterial,
   validarValoresNumericosMaterial,
-  validarMovimentacao,
 } = require('../src/utils/validacoesEstoque');
 
 describe('ehInteiroValido', () => {
@@ -153,48 +152,5 @@ describe('validarValoresNumericosMaterial', () => {
       validade: 'invalida',
     });
     expect(erros).toHaveLength(5);
-  });
-});
-
-describe('validarMovimentacao', () => {
-  const movimentacaoValida = { material_id: 1, tipo: 'entrada', quantidade: 5 };
-
-  it('não retorna erros para uma movimentação de entrada válida', () => {
-    expect(validarMovimentacao(movimentacaoValida)).toEqual([]);
-  });
-
-  it('não retorna erros para uma movimentação de saída válida', () => {
-    expect(validarMovimentacao({ ...movimentacaoValida, tipo: 'saida' })).toEqual([]);
-  });
-
-  it("retorna 'Material é obrigatório' quando material_id está ausente", () => {
-    const { material_id, ...semMaterial } = movimentacaoValida;
-    expect(validarMovimentacao(semMaterial)).toContain('Material é obrigatório');
-  });
-
-  it("retorna erro de tipo quando o tipo não é 'entrada' nem 'saida'", () => {
-    expect(validarMovimentacao({ ...movimentacaoValida, tipo: 'transferencia' })).toContain(
-      "Tipo deve ser 'entrada' ou 'saida'"
-    );
-    expect(validarMovimentacao({ ...movimentacaoValida, tipo: '' })).toContain(
-      "Tipo deve ser 'entrada' ou 'saida'"
-    );
-  });
-
-  it('retorna erro de quantidade quando ela é zero, negativa ou decimal', () => {
-    expect(validarMovimentacao({ ...movimentacaoValida, quantidade: 0 })).toContain(
-      'Quantidade deve ser um número inteiro maior que zero'
-    );
-    expect(validarMovimentacao({ ...movimentacaoValida, quantidade: -5 })).toContain(
-      'Quantidade deve ser um número inteiro maior que zero'
-    );
-    expect(validarMovimentacao({ ...movimentacaoValida, quantidade: 1.5 })).toContain(
-      'Quantidade deve ser um número inteiro maior que zero'
-    );
-  });
-
-  it('acumula todos os erros quando todos os campos são inválidos', () => {
-    const erros = validarMovimentacao({ material_id: null, tipo: 'x', quantidade: -1 });
-    expect(erros).toHaveLength(3);
   });
 });

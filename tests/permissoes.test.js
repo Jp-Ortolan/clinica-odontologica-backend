@@ -13,7 +13,7 @@ function gerarToken(perfil) {
   );
 }
 
-const tokenProfessor = gerarToken('professor');
+const tokenCoordenador = gerarToken('coordenador');
 const tokenAluno = gerarToken('aluno');
 
 describe('GET /api/permissoes', () => {
@@ -24,10 +24,10 @@ describe('GET /api/permissoes', () => {
     expect(res.status).toBe(403);
   });
 
-  it('retorna a matriz completa para professor', async () => {
+  it('retorna a matriz completa para coordenador', async () => {
     const res = await request(app)
       .get('/api/permissoes')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.find((m) => m.modulo === 'pacientes')).toBeTruthy();
@@ -36,7 +36,7 @@ describe('GET /api/permissoes', () => {
   it('filtra por perfil quando ?perfil= é informado', async () => {
     const res = await request(app)
       .get('/api/permissoes?perfil=recepcionista')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     // recepcionista não deve aparecer em módulos que ela não acessa (ex.: materiais)
     expect(res.body.find((m) => m.modulo === 'materiais')).toBeUndefined();
@@ -48,11 +48,11 @@ describe('Matriz montada a partir das rotas reais', () => {
   async function matriz() {
     const res = await request(app)
       .get('/api/permissoes')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     return Object.fromEntries(res.body.map((m) => [m.modulo, m.perfis]));
   }
 
-  it('coordenador aparece em toda ação permitida ao professor', async () => {
+  it('coordenador aparece em toda ação clínica permitida ao professor', async () => {
     const m = await matriz();
     Object.values(m).forEach((acoes) => {
       Object.values(acoes).forEach((perfis) => {
@@ -61,18 +61,13 @@ describe('Matriz montada a partir das rotas reais', () => {
     });
   });
 
-  it('reflete as rotas: paciente não tem "remover" e movimentação também não', async () => {
+  it('reflete as rotas reais', async () => {
     const m = await matriz();
-    expect(m.pacientes.remover).toBeUndefined();
-    expect(m.logs).toEqual({ listar: ['coordenador', 'professor'] });
-    expect(m['pacientes.medicamentos'].criar).toContain('recepcionista');
-  });
-
-  it('coordenador acessa rota de professor (ex.: logs)', async () => {
-    const tokenCoordenador = gerarToken('coordenador');
-    const res = await request(app)
-      .get('/api/logs')
-      .set('Authorization', `Bearer ${tokenCoordenador}`);
-    expect(res.status).not.toBe(403);
+    expect(m.pacientes.remover).toBeUndefined(); // paciente não é excluído
+    expect(m.logs).toEqual({ listar: ['coordenador'] });
+    expect(m.usuarios.listar).toEqual(['coordenador']);
+    expect(m['usuarios.profissionais'].listar).toContain('professor');
+    // rotas protegidas no arquivo inteiro (router.use) também entram
+    expect(m['rastreabilidade.pacotes'].criar).toEqual(['coordenador', 'professor', 'aluno']);
   });
 });

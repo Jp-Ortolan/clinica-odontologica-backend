@@ -116,8 +116,8 @@ controle de permissão por perfil.
 
 | Perfil | Permissões |
 |---|---|
-| coordenador | Tudo o que o professor pode; único que gerencia contas de coordenador |
-| professor | Acesso total aos módulos clínicos e administrativos |
+| coordenador | Administração (usuários, logs, permissões) + acesso clínico |
+| professor | Acesso clínico completo (supervisão, exclusões, liberação CME) |
 | aluno | Consultas, prontuário e cirurgias sob supervisão |
 | recepcionista | Agendamento e cadastro de pacientes |
 
@@ -194,7 +194,9 @@ No CI, as migrations também são aplicadas num PostgreSQL de verdade.
 PORT=3000
 NODE_ENV=development            # production no Railway (liga SSL do Postgres)
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/clinica_odontologica
-JWT_SECRET=sua_chave_secreta_aqui
+JWT_SECRET=sua_chave_secreta_aqui   # também assina os códigos de recuperação: não troque em produção
+RESEND_API_KEY=                     # envio do código de recuperação por e-mail
+EMAIL_FROM=                         # remetente de domínio verificado no Resend
 # Opcional: front-ends liberados no CORS (separados por vírgula).
 # Padrão: o front da Vercel e http://localhost:5173
 CORS_ORIGINS=https://clinicaodontologica-frontend.vercel.app

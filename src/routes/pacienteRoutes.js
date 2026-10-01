@@ -4,8 +4,8 @@ const pacienteController = require('../controllers/pacienteController');
 const auth = require('../middlewares/auth');
 const autorizar = require('../middlewares/perfil');
 
-const TODOS = ['professor', 'aluno', 'recepcionista'];
-const PROF_RECEP = ['professor', 'recepcionista'];
+const TODOS = ['coordenador', 'professor', 'aluno', 'recepcionista'];
+const PROF_RECEP = ['coordenador', 'professor', 'recepcionista'];
 
 // ── Paciente ─────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ router.get('/:id', auth, autorizar(...TODOS), pacienteController.buscarPorId);
 router.post('/', auth, autorizar(...PROF_RECEP), pacienteController.criar);
 
 // PUT /api/pacientes/:id → professor e recepcionista
-router.put('/:id', auth, autorizar(...PROF_RECEP), pacienteController.atualizar);
+router.put('/:id', auth, autorizar(...TODOS), pacienteController.atualizar);
 
 // PATCH /api/pacientes/:id/status → ativar/inativar (professor e recepcionista)
 router.patch('/:id/status', auth, autorizar(...PROF_RECEP), pacienteController.atualizarStatusAtivo);
@@ -34,24 +34,35 @@ router.patch('/:id/status', auth, autorizar(...PROF_RECEP), pacienteController.a
 
 router.get('/:id/alergias', auth, autorizar(...TODOS), pacienteController.listarAlergias);
 router.post('/:id/alergias', auth, autorizar(...PROF_RECEP, 'aluno'), pacienteController.criarAlergia);
-router.delete('/:id/alergias/:alergiaId', auth, autorizar('professor', 'aluno'), pacienteController.deletarAlergia);
+router.delete('/:id/alergias/:alergiaId', auth, autorizar('coordenador', 'professor'), pacienteController.deletarAlergia);
 
 // ── Medicamentos ─────────────────────────────────────────────
 
 router.get('/:id/medicamentos', auth, autorizar(...TODOS), pacienteController.listarMedicamentos);
-router.post('/:id/medicamentos', auth, autorizar(...PROF_RECEP, 'aluno'), pacienteController.criarMedicamento);
-router.delete('/:id/medicamentos/:medicamentoId', auth, autorizar('professor', 'aluno'), pacienteController.deletarMedicamento);
+router.post('/:id/medicamentos', auth, autorizar(...TODOS), pacienteController.criarMedicamento);
+router.delete('/:id/medicamentos/:medicamentoId', auth, autorizar('coordenador', 'professor'), pacienteController.deletarMedicamento);
 
 // ── Documentos ───────────────────────────────────────────────
 
 router.get('/:id/documentos', auth, autorizar(...TODOS), pacienteController.listarDocumentos);
-router.post('/:id/documentos', auth, autorizar(...PROF_RECEP), pacienteController.criarDocumento);
+router.post('/:id/documentos', auth, autorizar('recepcionista'), pacienteController.criarDocumento);
 router.get('/:id/documentos/:documentoId/download', auth, autorizar(...TODOS), pacienteController.baixarDocumento);
-router.delete('/:id/documentos/:documentoId', auth, autorizar('professor'), pacienteController.deletarDocumento);
+router.delete('/:id/documentos/:documentoId', auth, autorizar('coordenador', 'professor'), pacienteController.deletarDocumento);
 
 // ── Evolução do paciente ─────────────────────────────────────
 
-router.get('/:id/evolucoes', auth, autorizar('professor', 'aluno'), pacienteController.listarEvolucoes);
-router.post('/:id/evolucoes', auth, autorizar('professor', 'aluno'), pacienteController.criarEvolucao);
+router.get('/:id/evolucoes', auth, autorizar('coordenador', 'professor', 'aluno'), pacienteController.listarEvolucoes);
+router.post('/:id/evolucoes', auth, autorizar('coordenador', 'professor', 'aluno'), pacienteController.criarEvolucao);
 
+const prontuario = require('../services/prontuarioService');
+const prontuarioRepo = require('../repositories/prontuarioRepository');
+router.get('/:id/saude', auth, autorizar(...TODOS), async (req, res, next) => {
+  try { res.json(await prontuarioRepo.saude(req.params.id)); } catch (err) { next(err); }
+});
+router.put('/:id/saude', auth, autorizar(...TODOS), async (req, res, next) => {
+  try { res.json(await prontuario.atualizarSaude(req.params.id, req.body, req.user)); } catch (err) { next(err); }
+});
+router.get('/:id/historico', auth, autorizar(...TODOS), async (req, res, next) => {
+  try { res.json(await prontuario.historico(req.params.id)); } catch (err) { next(err); }
+});
 module.exports = router;

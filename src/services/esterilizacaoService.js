@@ -150,6 +150,10 @@ async function obterQRCode(pacoteId) {
     err.status = 404;
     throw err;
   }
+  if (pacote.preparado_por) {
+    const etiqueta = await require('./rastreabilidadeService').etiqueta(pacoteId);
+    return {pacote_id:pacote.id,material_nome:etiqueta.nome_pacote,qr_code:etiqueta.qr_code};
+  }
   // regenera se não tiver (retrocompatibilidade com registros antigos)
   if (!pacote.qr_code) {
     const textoQR = `ciclo:${pacote.esterilizacao_id}|material:${pacote.material_id}|gerado:${new Date().toISOString()}`;
@@ -159,6 +163,8 @@ async function obterQRCode(pacoteId) {
 }
 
 async function atualizarStatusPacote(pacoteId, status) {
+  const atual = await esterilizacaoRepository.buscarPacotePorId(pacoteId);
+  if (atual?.preparado_por) throw {status:409,message:'Use o fluxo do pacote CME para registrar uma mudança de status.'};
   if (!STATUS_PACOTE_VALIDOS.includes(status)) {
     const err = new Error(`Status inválido. Use: ${STATUS_PACOTE_VALIDOS.join(', ')}`);
     err.status = 400;

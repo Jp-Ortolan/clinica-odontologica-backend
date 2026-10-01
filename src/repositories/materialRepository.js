@@ -14,6 +14,7 @@ const SELECT_BASE = `
 const SELECT_LIST = `
   SELECT
     m.id, m.nome, m.codigo_barras, m.categoria_id, m.unidade_medida,
+    m.tipo_material, m.passa_cme, m.descricao, (SELECT MIN(l.validade) FROM material_lote l WHERE l.material_id=m.id AND l.quantidade>0) AS proximo_vencimento,
     m.quantidade, m.estoque_minimo, m.estoque_ideal, m.fabricante, m.lote,
     m.registro_anvisa, m.data_entrada, m.validade, m.criado_em,
     (m.imagem_base64 IS NOT NULL) AS tem_imagem,
@@ -79,8 +80,8 @@ async function criar(dados) {
     `INSERT INTO material
        (nome, codigo_barras, categoria_id, unidade_medida, quantidade,
         estoque_minimo, estoque_ideal, fabricante, lote, registro_anvisa,
-        data_entrada, validade, imagem_base64, descricao)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        data_entrada, validade, imagem_base64, descricao, tipo_material, passa_cme)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
      RETURNING *`,
     [
       nome,
@@ -97,54 +98,23 @@ async function criar(dados) {
       validade,
       imagem_base64 ?? null,
       descricao ?? null,
+      dados.tipo_material || 'consumivel', dados.passa_cme === true,
     ]
   );
   return buscarPorId(result.rows[0].id);
 }
 
 async function atualizar(id, dados) {
-  const {
-    nome,
-    codigo_barras,
-    categoria_id,
-    unidade_medida,
-    quantidade,
-    estoque_minimo,
-    estoque_ideal,
-    fabricante,
-    lote,
-    registro_anvisa,
-    data_entrada,
-    validade,
-    imagem_base64,
-    descricao,
-  } = dados;
-
+  // Saldos e lotes são alterados exclusivamente pelas movimentações atômicas.
   const result = await pool.query(
-    `UPDATE material
-     SET nome = $1, codigo_barras = $2, categoria_id = $3, unidade_medida = $4,
-         quantidade = $5, estoque_minimo = $6, estoque_ideal = $7, fabricante = $8,
-         lote = $9, registro_anvisa = $10, data_entrada = $11, validade = $12,
-         imagem_base64 = $13, descricao = $14
-     WHERE id = $15
-     RETURNING id`,
-    [
-      nome,
-      codigo_barras,
-      categoria_id,
-      unidade_medida,
-      quantidade,
-      estoque_minimo,
-      estoque_ideal,
-      fabricante,
-      lote,
-      registro_anvisa,
-      data_entrada,
-      validade,
-      imagem_base64 ?? null,
-      descricao ?? null,
-      id,
-    ]
+    `UPDATE material SET nome=$1, codigo_barras=$2, categoria_id=$3,
+      unidade_medida=$4, estoque_minimo=$5, estoque_ideal=$6, fabricante=$7,
+      registro_anvisa=$8, imagem_base64=$9, descricao=$10, tipo_material=$11, passa_cme=$12
+      WHERE id=$13 RETURNING id`,
+    [dados.nome, dados.codigo_barras, dados.categoria_id, dados.unidade_medida,
+      dados.estoque_minimo, dados.estoque_ideal, dados.fabricante, dados.registro_anvisa,
+      dados.imagem_base64 ?? null, dados.descricao ?? null,
+      dados.tipo_material || 'consumivel', dados.passa_cme === true, id]
   );
   if (!result.rows[0]) return null;
   return buscarPorId(id);
@@ -166,34 +136,9 @@ async function contarMovimentacoesVinculadas(id) {
   return result.rows[0].total;
 }
 
-// Ajusta a quantidade em estoque de forma atômica.
-// delta positivo = entrada, delta negativo = saída.
-// A CHECK chk_material_quantidade_nao_negativa garante que o estoque
-// nunca fique negativo (lança erro de constraint se isso for tentado).
-async function ajustarQuantidade(id, delta, db = pool) {
-  const result = await db.query(
-    `UPDATE material
-     SET quantidade = quantidade + $1
-     WHERE id = $2
-     RETURNING *`,
-    [delta, id]
-  );
-  return result.rows[0] || null;
-}
 
-// Lê o material travando a linha até o fim da transação: duas saídas ao
-// mesmo tempo não conseguem as duas "ver" o mesmo saldo e passar da conta.
-async function buscarParaMovimentacao(id, db) {
-  const result = await db.query(
-    `SELECT id, nome, quantidade, estoque_minimo, unidade_medida
-     FROM material WHERE id = $1 FOR UPDATE`,
-    [id]
-  );
-  return result.rows[0] || null;
-}
 
 module.exports = {
-  buscarParaMovimentacao,
   listar,
   buscarPorId,
   buscarPorCodigoBarras,
@@ -201,5 +146,4 @@ module.exports = {
   atualizar,
   deletar,
   contarMovimentacoesVinculadas,
-  ajustarQuantidade,
 };

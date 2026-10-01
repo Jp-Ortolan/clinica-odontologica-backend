@@ -80,95 +80,13 @@ describe('POST /api/auth/login', () => {
   });
 });
 
-describe('POST /api/auth/recuperar-senha', () => {
-  afterEach(() => jest.clearAllMocks());
-
-  it('retorna 400 sem email', async () => {
+describe('recuperação por código', () => {
+  it('rejeita solicitação sem email', async () => {
     const res = await request(app).post('/api/auth/recuperar-senha').send({});
     expect(res.status).toBe(400);
   });
-
-  it('retorna 200 SEM devolver o token quando o e-mail existe', async () => {
-    authRepository.findByEmail.mockResolvedValue(usuarioFake);
-    authRepository.salvarTokenRecuperacao.mockResolvedValue();
-
-    const res = await request(app)
-      .post('/api/auth/recuperar-senha')
-      .send({ email: usuarioFake.email });
-
-    expect(res.status).toBe(200);
-    // O token só pode sair por e-mail: devolvê-lo aqui permitiria trocar a
-    // senha de qualquer pessoa sabendo apenas o e-mail dela.
-    expect(res.body.reset_token).toBeUndefined();
-    expect(JSON.stringify(res.body)).not.toMatch(/[0-9a-f]{64}/);
-    // No banco vai só o resumo SHA-256 (64 caracteres hexadecimais).
-    const [, tokenSalvo] = authRepository.salvarTokenRecuperacao.mock.calls[0];
-    expect(tokenSalvo).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it('retorna 200 sem revelar se o e-mail não existe (evita enumeração)', async () => {
-    authRepository.findByEmail.mockResolvedValue(null);
-
-    const res = await request(app)
-      .post('/api/auth/recuperar-senha')
-      .send({ email: 'ninguem@teste.com' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.reset_token).toBeUndefined();
-  });
-});
-
-describe('POST /api/auth/redefinir-senha', () => {
-  afterEach(() => jest.clearAllMocks());
-
-  it('retorna 400 sem token ou nova senha', async () => {
-    const res = await request(app).post('/api/auth/redefinir-senha').send({});
+  it('rejeita redefinição por token antigo sem código e email', async () => {
+    const res = await request(app).post('/api/auth/redefinir-senha').send({ token: 'antigo', nova_senha: 'senha123' });
     expect(res.status).toBe(400);
-  });
-
-  it('retorna 400 com senha muito curta', async () => {
-    const res = await request(app)
-      .post('/api/auth/redefinir-senha')
-      .send({ token: 'abc', nova_senha: '123' });
-    expect(res.status).toBe(400);
-  });
-
-  it('retorna 401 com token inválido', async () => {
-    authRepository.findByResetToken.mockResolvedValue(null);
-    const res = await request(app)
-      .post('/api/auth/redefinir-senha')
-      .send({ token: 'invalido', nova_senha: 'novaSenha123' });
-    expect(res.status).toBe(401);
-  });
-
-  it('retorna 401 com token expirado', async () => {
-    authRepository.findByResetToken.mockResolvedValue({
-      ...usuarioFake,
-      reset_token_expires: new Date(Date.now() - 1000 * 60), // expirou há 1 minuto
-    });
-    const res = await request(app)
-      .post('/api/auth/redefinir-senha')
-      .send({ token: 'expirado', nova_senha: 'novaSenha123' });
-    expect(res.status).toBe(401);
-  });
-
-  it('retorna 200 e redefine a senha com token válido', async () => {
-    authRepository.findByResetToken.mockResolvedValue({
-      ...usuarioFake,
-      reset_token_expires: new Date(Date.now() + 1000 * 60 * 30), // válido por mais 30min
-    });
-    authRepository.redefinirSenha.mockResolvedValue();
-    bcrypt.hash.mockResolvedValue('novo_hash');
-
-    const res = await request(app)
-      .post('/api/auth/redefinir-senha')
-      .send({ token: 'valido', nova_senha: 'novaSenha123' });
-
-    expect(res.status).toBe(200);
-    expect(authRepository.redefinirSenha).toHaveBeenCalledWith(usuarioFake.id, 'novo_hash');
-    // A busca é feita pelo resumo do token, nunca pelo token em texto puro.
-    const [buscado] = authRepository.findByResetToken.mock.calls[0];
-    expect(buscado).toMatch(/^[0-9a-f]{64}$/);
-    expect(buscado).not.toBe('valido');
   });
 });
