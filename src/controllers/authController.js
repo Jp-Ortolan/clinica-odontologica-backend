@@ -29,8 +29,8 @@ async function solicitarRecuperacaoSenha(req, res, next) {
 
 async function redefinirSenha(req, res, next) {
   try {
-    const { token, nova_senha } = req.body;
-    const resultado = await authService.redefinirSenha(token, nova_senha);
+    const { email, codigo, nova_senha } = req.body;
+    const resultado = await authService.redefinirSenha(email, codigo, nova_senha);
     res.status(200).json(resultado);
   } catch (err) {
     next(err);

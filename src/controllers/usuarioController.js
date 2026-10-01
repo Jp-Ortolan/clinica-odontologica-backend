@@ -44,4 +44,12 @@ async function deletar(req, res, next) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, deletar };
+async function listarProfissionais(req, res, next) {
+  try {
+    const usuarios = await usuarioService.listar({ ativo: true });
+    res.json(usuarios.filter(u => ['coordenador', 'professor', 'aluno'].includes(u.perfil))
+      .map(({ id, nome, perfil, ativo }) => ({ id, nome, perfil, ativo })));
+  } catch (err) { next(err); }
+}
+
+module.exports = { listarProfissionais, listar, buscarPorId, criar, atualizar, deletar };

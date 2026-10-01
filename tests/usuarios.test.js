@@ -20,7 +20,7 @@ function gerarToken(perfil, id = 1) {
   );
 }
 
-const tokenProfessor = gerarToken('professor', 1);
+const tokenCoordenador = gerarToken('coordenador', 1);
 const tokenAluno = gerarToken('aluno', 2);
 const tokenRecepcionista = gerarToken('recepcionista', 3);
 
@@ -51,12 +51,12 @@ describe('GET /api/usuarios', () => {
     expect(res.status).toBe(403);
   });
 
-  it('retorna 200 e a lista de usuários (professor)', async () => {
+  it('retorna 200 e a lista de usuários (coordenador)', async () => {
     usuarioRepository.listar.mockResolvedValue([usuarioFake]);
 
     const res = await request(app)
       .get('/api/usuarios')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([usuarioFake]);
@@ -66,7 +66,7 @@ describe('GET /api/usuarios', () => {
 describe('POST /api/usuarios', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('retorna 403 quando o perfil não é professor (recepcionista)', async () => {
+  it('retorna 403 quando o perfil não é coordenador (recepcionista)', async () => {
     const res = await request(app)
       .post('/api/usuarios')
       .set('Authorization', `Bearer ${tokenRecepcionista}`)
@@ -79,7 +79,7 @@ describe('POST /api/usuarios', () => {
   it('retorna 400 quando faltam campos obrigatórios', async () => {
     const res = await request(app)
       .post('/api/usuarios')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .set('Authorization', `Bearer ${tokenCoordenador}`)
       .send({ nome: 'Usuário Incompleto' });
 
     expect(res.status).toBe(400);
@@ -88,7 +88,7 @@ describe('POST /api/usuarios', () => {
   it('retorna 400 quando o perfil é inválido', async () => {
     const res = await request(app)
       .post('/api/usuarios')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .set('Authorization', `Bearer ${tokenCoordenador}`)
       .send({
         nome: 'Alguém', cpf: '99999999999', email: 'alguem@clinica.com',
         senha: 'senha123', perfil: 'gerente',
@@ -102,7 +102,7 @@ describe('POST /api/usuarios', () => {
 
     const res = await request(app)
       .post('/api/usuarios')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .set('Authorization', `Bearer ${tokenCoordenador}`)
       .send({
         nome: usuarioFake.nome, cpf: usuarioFake.cpf, email: usuarioFake.email,
         senha: 'senha123', perfil: 'professor',
@@ -112,14 +112,14 @@ describe('POST /api/usuarios', () => {
     expect(usuarioRepository.criar).not.toHaveBeenCalled();
   });
 
-  it('retorna 201 ao criar usuário com dados válidos (professor)', async () => {
+  it('retorna 201 ao criar usuário com dados válidos (coordenador)', async () => {
     usuarioRepository.buscarPorEmail.mockResolvedValue(null);
     usuarioRepository.buscarPorCpf.mockResolvedValue(null);
     usuarioRepository.criar.mockResolvedValue(usuarioFake);
 
     const res = await request(app)
       .post('/api/usuarios')
-      .set('Authorization', `Bearer ${tokenProfessor}`)
+      .set('Authorization', `Bearer ${tokenCoordenador}`)
       .send({
         nome: usuarioFake.nome,
         cpf: usuarioFake.cpf,
@@ -136,7 +136,7 @@ describe('POST /api/usuarios', () => {
 describe('DELETE /api/usuarios/:id', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('retorna 403 quando o perfil não é professor', async () => {
+  it('retorna 403 quando o perfil não é coordenador', async () => {
     const res = await request(app)
       .delete('/api/usuarios/10')
       .set('Authorization', `Bearer ${tokenRecepcionista}`);
@@ -148,18 +148,18 @@ describe('DELETE /api/usuarios/:id', () => {
   it('retorna 400 ao tentar excluir a própria conta', async () => {
     const res = await request(app)
       .delete('/api/usuarios/1')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
 
     expect(res.status).toBe(400);
     expect(usuarioRepository.deletar).not.toHaveBeenCalled();
   });
 
-  it('retorna 200 ao remover outro usuário (professor)', async () => {
+  it('retorna 200 ao remover outro usuário (coordenador)', async () => {
     usuarioRepository.deletar.mockResolvedValue({ id: 10 });
 
     const res = await request(app)
       .delete('/api/usuarios/10')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toMatch(/sucesso/i);
@@ -170,7 +170,7 @@ describe('DELETE /api/usuarios/:id', () => {
 
     const res = await request(app)
       .delete('/api/usuarios/999')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
 
     expect(res.status).toBe(404);
   });

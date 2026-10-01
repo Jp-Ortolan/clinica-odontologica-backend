@@ -30,6 +30,6 @@ router.delete('/:id', auth, notificacaoController.deletar);
 // POST /api/notificacoes → apenas professor pode disparar notificação
 // manualmente (avisos para a turma, por exemplo). As notificações
 // automáticas são criadas pelos próprios services, sem passar por HTTP.
-router.post('/', auth, autorizar('professor'), notificacaoController.criar);
+router.post('/', auth, autorizar('coordenador', 'professor'), notificacaoController.criar);
 
 module.exports = router;

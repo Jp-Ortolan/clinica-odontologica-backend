@@ -62,6 +62,10 @@ function validarImagemBase64(imagemBase64) {
 }
 
 async function criar(dados) {
+  dados = { ...dados, codigo_barras: String(dados.codigo_barras || '').trim() || ('MAT' + require('crypto').randomBytes(8).toString('hex').toUpperCase()) };
+  if (/^CME\d+$/i.test(dados.codigo_barras)) throw {status:400,message:'O prefixo CME é reservado aos pacotes de esterilização.'};
+  if (dados.quantidade && Number(dados.quantidade) !== 0 || dados.lote || dados.validade) throw {status:400,message:'Cadastre o material e registre lote, validade e quantidade em Entrada de estoque.'};
+  if (!['consumivel','instrumental'].includes(dados.tipo_material || 'consumivel') || (dados.passa_cme && dados.tipo_material !== 'instrumental')) throw {status:400,message:'Somente instrumental reutilizável pode passar pelo CME.'};
   const erros = [
     ...validarCamposObrigatoriosMaterial(dados),
     ...validarValoresNumericosMaterial(dados),
@@ -86,6 +90,8 @@ async function criar(dados) {
   }
 
   const material = await materialRepository.criar({
+    tipo_material: dados.tipo_material || 'consumivel',
+    passa_cme: dados.passa_cme === true,
     nome: dados.nome.trim(),
     codigo_barras: dados.codigo_barras.trim(),
     categoria_id: dados.categoria_id,
@@ -109,7 +115,10 @@ async function atualizar(id, dados) {
   const materialAtual = await materialRepository.buscarPorId(id);
   if (!materialAtual) throw { status: 404, message: 'Material não encontrado' };
 
+  if (dados.quantidade !== undefined && Number(dados.quantidade) !== Number(materialAtual.quantidade)) throw {status:400,message:'Use uma entrada ou saída por lote para alterar o estoque.'};
   const dadosAtualizados = {
+    tipo_material: dados.tipo_material ?? materialAtual.tipo_material,
+    passa_cme: dados.passa_cme ?? materialAtual.passa_cme,
     nome: dados.nome ?? materialAtual.nome,
     codigo_barras: dados.codigo_barras ?? materialAtual.codigo_barras,
     categoria_id: dados.categoria_id ?? materialAtual.categoria_id,
@@ -128,6 +137,7 @@ async function atualizar(id, dados) {
     descricao: dados.descricao ?? materialAtual.descricao,
   };
 
+  if (dadosAtualizados.passa_cme && dadosAtualizados.tipo_material !== 'instrumental') throw {status:400,message:'Somente instrumentais reutilizáveis passam pelo CME.'};
   const erros = [
     ...validarCamposObrigatoriosMaterial(dadosAtualizados),
     ...validarValoresNumericosMaterial(dadosAtualizados),
@@ -139,6 +149,7 @@ async function atualizar(id, dados) {
   }
 
   if (dadosAtualizados.codigo_barras !== materialAtual.codigo_barras) {
+    if (/^CME\d+$/i.test(dadosAtualizados.codigo_barras.trim())) throw {status:400,message:'O prefixo CME é reservado aos pacotes de esterilização.'};
     const emUso = await materialRepository.buscarPorCodigoBarras(dadosAtualizados.codigo_barras);
     if (emUso) throw { status: 409, message: 'Código de barras já cadastrado para outro material' };
   }

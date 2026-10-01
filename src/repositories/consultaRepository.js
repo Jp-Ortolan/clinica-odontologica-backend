@@ -17,9 +17,13 @@ async function listar(filtros = {}) {
     condicoes.push(`disciplina = $${valores.length}`);
   }
 
+  if (filtros.aluno_id) {
+    valores.push(filtros.aluno_id);
+    condicoes.push(`(usuario_id = $${valores.length} OR EXISTS (SELECT 1 FROM consulta_aluno vinculo WHERE vinculo.consulta_id = consulta.id AND vinculo.aluno_id = $${valores.length}))`);
+  }
   const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
   const result = await pool.query(
-    `SELECT * FROM consulta ${where} ORDER BY data_hora DESC`,
+    `SELECT consulta.*, ARRAY(SELECT aluno_id FROM consulta_aluno WHERE consulta_id = consulta.id) AS alunos_ids FROM consulta ${where} ORDER BY data_hora DESC`,
     valores
   );
   return result.rows;
@@ -35,13 +39,24 @@ async function buscarPorId(id) {
 
 async function criar(dados) {
   const { paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina } = dados;
-  const result = await pool.query(
+  const client = await pool.connect();
+  try {
+  await client.query('BEGIN');
+  const result = await client.query(
     `INSERT INTO consulta (paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina)
      VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'agendada'), $7)
      RETURNING *`,
     [paciente_id, usuario_id, data_hora, queixa_principal, observacoes, status, disciplina ?? null]
   );
-  return result.rows[0];
+  const consulta = result.rows[0];
+  await client.query(
+    "INSERT INTO notificacao (usuario_id, titulo, mensagem, tipo, referencia_id) VALUES ($1, 'Nova consulta agendada', $2, 'consulta', $3)",
+    [usuario_id, `Nova consulta de ${disciplina}. Acesse a agenda para definir os alunos responsáveis.`, consulta.id]
+  );
+  await client.query('COMMIT');
+  return consulta;
+  } catch (err) { await client.query('ROLLBACK'); throw err; }
+  finally { client.release(); }
 }
 
 async function atualizar(id, dados) {

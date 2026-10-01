@@ -2,9 +2,20 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { gerarToken } = require('../utils/jwt');
 const authRepository = require('../repositories/authRepository');
-const auditLogger = require('../utils/auditLogger');
 
-const VALIDADE_TOKEN_MINUTOS = 60;
+const recoveryRepository = require('../repositories/recoveryRepository');
+const recoveryEmail = require('./recoveryEmailService');
+
+function validarEmail(email) {
+  if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    throw { status: 400, message: 'Informe um e-mail v?lido.' };
+  }
+  return email.trim();
+}
+
+function resumoCodigo(email, codigo) {
+  return crypto.createHmac('sha256', process.env.JWT_SECRET).update(JSON.stringify([email, codigo])).digest('hex');
+}
 
 async function login(email, senha) {
   // 1. Busca o usuário pelo email
@@ -39,51 +50,36 @@ async function login(email, senha) {
   };
 }
 
-// Gera um token de uso único, válido por 1h, pra recuperação de senha.
-// Em produção esse token iria por e-mail; como o projeto não tem
-// servidor de e-mail configurado, ele volta direto na resposta.
 async function solicitarRecuperacaoSenha(email) {
+  email = validarEmail(email);
+  recoveryEmail.verificarConfiguracao();
+  const resposta = { message: 'Se o e-mail estiver cadastrado, voc? receber? um c?digo de confirma??o.' };
   const usuario = await authRepository.findByEmail(email);
-
-  // Não revela se o e-mail existe ou não (evita enumeração de usuários).
-  if (!usuario) {
-    return { message: 'Se o e-mail existir, um link de recuperação foi gerado' };
+  if (!usuario) return resposta;
+  const codigo = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+  const digest = resumoCodigo(email, codigo);
+  if (!await recoveryRepository.reservarCodigo(usuario.id, digest)) return resposta;
+  try {
+    await recoveryEmail.enviarCodigo(usuario.email, codigo);
+  } catch (err) {
+    await recoveryRepository.invalidarCodigo(usuario.id, digest);
+    throw err;
   }
-
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiraEm = new Date(Date.now() + VALIDADE_TOKEN_MINUTOS * 60 * 1000);
-
-  await authRepository.salvarTokenRecuperacao(usuario.id, token, expiraEm);
-  auditLogger.info('Recuperação de senha solicitada', { usuario_id: usuario.id });
-
-  return {
-    message: 'Se o e-mail existir, um link de recuperação foi gerado',
-    // Numa API real esse token nunca voltaria aqui, só por e-mail.
-    reset_token: token,
-    expira_em: expiraEm,
-  };
+  return resposta;
 }
 
-async function redefinirSenha(token, novaSenha) {
-  if (!token || !novaSenha) {
-    throw { status: 400, message: 'Token e nova senha são obrigatórios' };
+async function redefinirSenha(email, codigo, novaSenha) {
+  email = validarEmail(email);
+  if (typeof codigo !== 'string' || !/^\d{6}$/.test(codigo)) {
+    throw { status: 400, message: 'Informe o c?digo de 6 d?gitos recebido por e-mail.' };
   }
-  if (novaSenha.length < 6) {
-    throw { status: 400, message: 'A nova senha deve ter ao menos 6 caracteres' };
+  if (typeof novaSenha !== 'string' || novaSenha.length < 6 || Buffer.byteLength(novaSenha, 'utf8') > 72) {
+    throw { status: 400, message: 'A senha deve ter ao menos 6 caracteres e no m?ximo 72 bytes.' };
   }
-
-  const usuario = await authRepository.findByResetToken(token);
-  if (!usuario) {
-    throw { status: 401, message: 'Token de recuperação inválido' };
-  }
-  if (new Date(usuario.reset_token_expires) < new Date()) {
-    throw { status: 401, message: 'Token de recuperação expirado' };
-  }
-
+  if (!process.env.JWT_SECRET) throw { status: 503, message: 'Recupera??o indispon?vel.' };
   const senhaHash = await bcrypt.hash(novaSenha, 10);
-  await authRepository.redefinirSenha(usuario.id, senhaHash);
-  auditLogger.info('Senha redefinida', { usuario_id: usuario.id });
-
+  const sucesso = await recoveryRepository.consumirCodigo(email, resumoCodigo(email, codigo), senhaHash);
+  if (!sucesso) throw { status: 400, message: 'C?digo inv?lido, expirado ou limite de tentativas atingido. Solicite outro c?digo.' };
   return { message: 'Senha redefinida com sucesso' };
 }
 

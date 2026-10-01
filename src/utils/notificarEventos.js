@@ -23,7 +23,7 @@ const auditLogger = require('./auditLogger');
 
 // Perfis que cuidam da parte clínica/estoque. A recepção fica de fora
 // de propósito: ela não repõe material nem opera o CME.
-const PERFIS_CLINICOS = ['professor', 'aluno'];
+const PERFIS_CLINICOS = ['coordenador', 'professor', 'aluno'];
 
 // Notificação nunca pode derrubar a operação principal. Se falhar, vira
 // log e a requisição segue normalmente.
@@ -130,7 +130,7 @@ async function consultaCancelada(usuarioResponsavelId, { quandoFormatado, consul
 // ── Cirurgias ──────────────────────────────────────────────────────────
 
 async function cirurgiaAgendada({ cirurgiaId, pacienteNome, quandoFormatado, alunosIds = [] }) {
-  await paraPerfis(['professor'], {
+  await paraPerfis(['coordenador', 'professor'], {
     titulo: 'Nova cirurgia agendada',
     mensagem: `${pacienteNome} — ${quandoFormatado}`,
     tipo: 'cirurgia',

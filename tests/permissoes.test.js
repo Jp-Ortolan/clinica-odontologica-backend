@@ -13,7 +13,7 @@ function gerarToken(perfil) {
   );
 }
 
-const tokenProfessor = gerarToken('professor');
+const tokenCoordenador = gerarToken('coordenador');
 const tokenAluno = gerarToken('aluno');
 
 describe('GET /api/permissoes', () => {
@@ -24,10 +24,10 @@ describe('GET /api/permissoes', () => {
     expect(res.status).toBe(403);
   });
 
-  it('retorna a matriz completa para professor', async () => {
+  it('retorna a matriz completa para coordenador', async () => {
     const res = await request(app)
       .get('/api/permissoes')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.find((m) => m.modulo === 'pacientes')).toBeTruthy();
@@ -36,7 +36,7 @@ describe('GET /api/permissoes', () => {
   it('filtra por perfil quando ?perfil= é informado', async () => {
     const res = await request(app)
       .get('/api/permissoes?perfil=recepcionista')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     // recepcionista não deve aparecer em módulos que ela não acessa (ex.: materiais)
     expect(res.body.find((m) => m.modulo === 'materiais')).toBeUndefined();
