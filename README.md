@@ -23,7 +23,7 @@ Sistema de gestão para clínica odontológica universitária
 |---|---|
 | **API** | https://clinica-odontologica-backend-production.up.railway.app |
 | **Health check** | [`/health`](https://clinica-odontologica-backend-production.up.railway.app/health) — responde `{"status":"ok"}` |
-| **Métricas** | [`/metrics`](https://clinica-odontologica-backend-production.up.railway.app/metrics) — uptime, requisições, memória |
+| **Métricas** | `/metrics` — uptime, requisições, memória (exige token de professor/coordenador) |
 | **Base das rotas** | `/api` (ex.: `/api/pacientes`) |
 | **Front-end** | https://clinicaodontologica-frontend.vercel.app |
 
@@ -53,12 +53,12 @@ clinica-odontologica-backend/
 │   │   ├── jwt.js             # Geração/verificação de token
 │   │   └── qrcode.js          # Geração de QR Code
 │   └── app.js                 # Configuração do Express
-├── migrations/                # 13 migrations versionadas, aplicadas em ordem
+├── migrations/                # migrations versionadas, aplicadas em ordem no deploy
 │   ├── 001_create_tables.sql  # Modelagem inicial
 │   ├── ...
 │   └── 013_corrige_documento_paciente.sql
 │   └── archive/               # Versão abandonada da 002 (ver comentário nela)
-├── tests/                     # 15 arquivos de teste (Jest + Supertest)
+├── tests/                     # testes automatizados (Jest + Supertest)
 ├── scripts/
 ├── .env.example
 ├── .dockerignore
@@ -107,16 +107,17 @@ Requisição HTTP
 | Esterilização (CME) | esterilizacao, pacote_esterilizado, controle_biologico |
 | Notificações | notificacao |
 | Dashboard e relatórios | (consulta as tabelas acima) |
-| Logs e permissões | (arquivo de log + matriz em `config/permissoes.js`) |
+| Logs e permissões | log_auditoria + matriz gerada a partir das rotas (`config/permissoes.js`) |
 
-São 19 tabelas e 98 endpoints, todos com regra de negócio, autenticação e
+Todos os endpoints têm regra de negócio, autenticação e
 controle de permissão por perfil.
 
 ## Perfis de Acesso
 
 | Perfil | Permissões |
 |---|---|
-| professor | Acesso total |
+| coordenador | Tudo o que o professor pode; único que gerencia contas de coordenador |
+| professor | Acesso total aos módulos clínicos e administrativos |
 | aluno | Consultas, prontuário e cirurgias sob supervisão |
 | recepcionista | Agendamento e cadastro de pacientes |
 
@@ -137,8 +138,23 @@ npm run migrate
 npm run dev
 ```
 
-O `npm run migrate` controla o que já foi aplicado numa tabela `_migrations`,
-então pode ser executado várias vezes sem repetir migration.
+O `npm run migrate` controla o que já foi aplicado na tabela `_migrations`
+(nome do arquivo + checksum), então pode ser executado várias vezes sem
+repetir migration. No Railway ele roda sozinho antes de a API subir
+(ver `Dockerfile`).
+
+Regras para migrations:
+
+- **Nunca renomeie nem edite** uma migration já aplicada: o deploy para com
+  erro se o conteúdo mudar. Para corrigir algo, crie uma migration nova.
+- Use o próximo número livre; dois arquivos com o mesmo número são recusados.
+- Nada de `DROP` sem antes conferir se há dados (veja a trava na 013).
+
+Para criar o primeiro usuário num banco novo:
+
+```bash
+SEED_ADMIN_EMAIL=coordenacao@clinica.com SEED_ADMIN_SENHA='uma-senha-forte' npm run seed:admin
+```
 
 ## Rodando com Docker
 
@@ -170,18 +186,23 @@ npm test
 ```
 
 Executa os testes automatizados (Jest + Supertest) com mocks de banco de dados.
+No CI, as migrations também são aplicadas num PostgreSQL de verdade.
 
 ## Variáveis de Ambiente
 
 ```env
 PORT=3000
+NODE_ENV=development            # production no Railway (liga SSL do Postgres)
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/clinica_odontologica
 JWT_SECRET=sua_chave_secreta_aqui
+# Opcional: front-ends liberados no CORS (separados por vírgula).
+# Padrão: o front da Vercel e http://localhost:5173
+CORS_ORIGINS=https://clinicaodontologica-frontend.vercel.app
 ```
 
 ## CI/CD
 
-O workflow `.github/workflows/ci.yml` roda automaticamente a cada push/PR para `main` ou `develop`: instala as dependências, verifica erros de sintaxe, builda a imagem Docker e roda `npm audit`.
+O workflow `.github/workflows/ci.yml` roda a cada push/PR para `main` ou `develop`: testes automatizados, migrations aplicadas do zero num PostgreSQL real (duas vezes, para garantir que são idempotentes), build da imagem Docker e `npm audit`.
 
 ## Convenções
 
