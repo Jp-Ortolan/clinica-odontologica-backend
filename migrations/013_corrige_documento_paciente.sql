@@ -20,10 +20,18 @@ DO $$
 BEGIN
     -- Só age se a tabela estiver com o schema antigo, para a migration
     -- continuar sendo segura em bancos que já tenham a versão correta.
+    --
+    -- Trava de segurança (adicionada depois de a 013 já ter rodado no
+    -- Railway, onde a tabela estava vazia): se a tabela antiga tiver
+    -- QUALQUER registro, a migration aborta em vez de apagar documentos.
+    -- Nesse caso é preciso converter os dados antes, manualmente.
     IF EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'documento_paciente' AND column_name = 'arquivo_url'
     ) THEN
+        IF EXISTS (SELECT 1 FROM documento_paciente) THEN
+            RAISE EXCEPTION 'documento_paciente (estrutura antiga) tem registros; converta os documentos antes de aplicar a 013';
+        END IF;
         DROP TABLE documento_paciente;
     END IF;
 END $$;

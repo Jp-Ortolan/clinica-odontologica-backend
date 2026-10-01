@@ -88,13 +88,26 @@ describe('GET /api/consultas/:id', () => {
 describe('POST /api/consultas', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('retorna 403 quando o perfil não tem permissão (recepcionista)', async () => {
+  // Desde 06/08 a recepção também agenda consultas (é ela quem marca).
+  it('retorna 201 quando a recepcionista agenda uma consulta', async () => {
+    pacienteRepository.buscarPorId.mockResolvedValue(pacienteFake);
+    consultaRepository.criar.mockResolvedValue(consultaFake);
+
     const res = await request(app)
       .post('/api/consultas')
       .set('Authorization', `Bearer ${tokenRecepcionista}`)
       .send({ paciente_id: 1, usuario_id: 1, data_hora: '2026-08-01T10:00:00.000Z' });
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(201);
+    expect(consultaRepository.criar).toHaveBeenCalled();
+  });
+
+  it('retorna 401 sem token', async () => {
+    const res = await request(app)
+      .post('/api/consultas')
+      .send({ paciente_id: 1, usuario_id: 1, data_hora: '2026-08-01T10:00:00.000Z' });
+
+    expect(res.status).toBe(401);
     expect(consultaRepository.criar).not.toHaveBeenCalled();
   });
 

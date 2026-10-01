@@ -170,8 +170,8 @@ async function contarMovimentacoesVinculadas(id) {
 // delta positivo = entrada, delta negativo = saída.
 // A CHECK chk_material_quantidade_nao_negativa garante que o estoque
 // nunca fique negativo (lança erro de constraint se isso for tentado).
-async function ajustarQuantidade(id, delta) {
-  const result = await pool.query(
+async function ajustarQuantidade(id, delta, db = pool) {
+  const result = await db.query(
     `UPDATE material
      SET quantidade = quantidade + $1
      WHERE id = $2
@@ -181,7 +181,19 @@ async function ajustarQuantidade(id, delta) {
   return result.rows[0] || null;
 }
 
+// Lê o material travando a linha até o fim da transação: duas saídas ao
+// mesmo tempo não conseguem as duas "ver" o mesmo saldo e passar da conta.
+async function buscarParaMovimentacao(id, db) {
+  const result = await db.query(
+    `SELECT id, nome, quantidade, estoque_minimo, unidade_medida
+     FROM material WHERE id = $1 FOR UPDATE`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 module.exports = {
+  buscarParaMovimentacao,
   listar,
   buscarPorId,
   buscarPorCodigoBarras,
