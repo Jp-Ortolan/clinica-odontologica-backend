@@ -6,6 +6,6 @@ const autorizar = require('../middlewares/perfil');
 
 // GET /api/logs?nivel=info|warn|error&limite=100 → apenas professor
 // (telas "Logs" e "Auditoria" do painel administrativo do protótipo)
-router.get('/', auth, autorizar('professor'), logController.listarAuditoria);
+router.get('/', auth, autorizar('coordenador'), logController.listarAuditoria);
 
 module.exports = router;

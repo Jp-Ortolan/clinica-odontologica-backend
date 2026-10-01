@@ -19,7 +19,7 @@ function gerarToken(perfil) {
   );
 }
 
-const tokenProfessor = gerarToken('professor');
+const tokenCoordenador = gerarToken('coordenador');
 const tokenAluno = gerarToken('aluno');
 
 const linha1 = JSON.stringify({ level: 'info', message: 'Paciente cadastrado', timestamp: '2026-07-25 10:00:00' });
@@ -28,7 +28,7 @@ const linha2 = JSON.stringify({ level: 'warn', message: 'Consulta cancelada', ti
 describe('GET /api/logs', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  it('retorna 403 para perfil aluno (só professor acessa)', async () => {
+  it('retorna 403 para perfil aluno (só coordenador acessa)', async () => {
     const res = await request(app)
       .get('/api/logs')
       .set('Authorization', `Bearer ${tokenAluno}`);
@@ -39,7 +39,7 @@ describe('GET /api/logs', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
     const res = await request(app)
       .get('/api/logs')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
@@ -49,7 +49,7 @@ describe('GET /api/logs', () => {
     jest.spyOn(fs, 'readFileSync').mockReturnValue(`${linha1}\n${linha2}\n`);
     const res = await request(app)
       .get('/api/logs')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
     expect(res.body[0].message).toBe('Consulta cancelada');
@@ -60,7 +60,7 @@ describe('GET /api/logs', () => {
     jest.spyOn(fs, 'readFileSync').mockReturnValue(`${linha1}\n${linha2}\n`);
     const res = await request(app)
       .get('/api/logs?nivel=warn')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].level).toBe('warn');
@@ -69,7 +69,7 @@ describe('GET /api/logs', () => {
   it('retorna 400 com nível inválido', async () => {
     const res = await request(app)
       .get('/api/logs?nivel=critico')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(400);
   });
 
@@ -78,7 +78,7 @@ describe('GET /api/logs', () => {
     jest.spyOn(fs, 'readFileSync').mockReturnValue(`${linha1}\nlinha-invalida-nao-json\n`);
     const res = await request(app)
       .get('/api/logs')
-      .set('Authorization', `Bearer ${tokenProfessor}`);
+      .set('Authorization', `Bearer ${tokenCoordenador}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
   });

@@ -36,7 +36,8 @@ async function criar(dados) {
     throw { status: 409, message: 'Já existe um paciente cadastrado com esse CPF' };
   }
 
-  return pacienteRepository.criar(dados);
+  require('./prontuarioService').validarSaude(dados.saude);
+  return require('../repositories/prontuarioRepository').criarPaciente(dados);
 }
 
 async function atualizar(id, dados) {

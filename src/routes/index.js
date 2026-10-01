@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+router.use('/rastreabilidade', require('./rastreabilidadeRoutes'));
 router.use('/auth',           require('./authRoutes'));
 router.use('/usuarios',       require('./usuarioRoutes'));
 router.use('/pacientes',      require('./pacienteRoutes'));

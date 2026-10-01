@@ -6,6 +6,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../src/repositories/pacienteRepository');
+jest.mock('../src/repositories/prontuarioRepository');
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
   hash: jest.fn(),
@@ -99,7 +100,7 @@ describe('POST /api/pacientes', () => {
 
   it('retorna 201 ao criar paciente com dados válidos (recepcionista)', async () => {
     pacienteRepository.buscarPorCpf.mockResolvedValue(null);
-    pacienteRepository.criar.mockResolvedValue(pacienteFake);
+    require('../src/repositories/prontuarioRepository').criarPaciente.mockResolvedValue(pacienteFake);
 
     const res = await request(app)
       .post('/api/pacientes')
@@ -108,6 +109,7 @@ describe('POST /api/pacientes', () => {
         nome: pacienteFake.nome,
         cpf: pacienteFake.cpf,
         data_nascimento: pacienteFake.data_nascimento,
+        saude: { alergias_status: 'nenhum', medicamentos_status: 'nenhum', alergias: [], medicamentos: [] },
       });
 
     expect(res.status).toBe(201);

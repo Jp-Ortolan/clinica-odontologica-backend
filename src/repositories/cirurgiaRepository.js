@@ -19,6 +19,10 @@ async function listar(filtros = {}) {
     condicoes.push(`mutirao_id = $${valores.length}`);
   }
 
+  if (filtros.aluno_id) {
+    valores.push(filtros.aluno_id);
+    condicoes.push(`(usuario_id = $${valores.length} OR EXISTS (SELECT 1 FROM cirurgia_aluno vinculo WHERE vinculo.cirurgia_id = cirurgia.id AND vinculo.usuario_id = $${valores.length}))`);
+  }
   const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
   const result = await pool.query(
     `SELECT * FROM cirurgia ${where} ORDER BY data_hora DESC`,

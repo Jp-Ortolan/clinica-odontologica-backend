@@ -10,20 +10,20 @@
 // endpoint GET /api/permissoes continua funcionando do mesmo jeito.
 
 const MATRIZ = [
-  { modulo: 'usuarios', descricao: 'Gestão de usuários do sistema', perfis: { listar: ['professor', 'recepcionista'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },
-  { modulo: 'pacientes', descricao: 'Cadastro e prontuário de pacientes', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'recepcionista'], editar: ['professor', 'recepcionista'], remover: ['professor'] } },
-  { modulo: 'pacientes.documentos', descricao: 'Upload/download de documentos do paciente', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'recepcionista'], remover: ['professor'] } },
-  { modulo: 'pacientes.evolucao', descricao: 'Prontuário / evolução clínica', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'] } },
-  { modulo: 'consultas', descricao: 'Agenda de consultas', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'aluno', 'recepcionista'], editar: ['professor', 'aluno', 'recepcionista'], remover: ['professor'] } },
-  { modulo: 'cirurgias', descricao: 'Agenda de cirurgias', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
-  { modulo: 'cirurgias.mutiroes', descricao: 'Mutirões cirúrgicos', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },
-  { modulo: 'cirurgias.alunos', descricao: 'Compartilhamento de cursos (alunos vinculados)', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], remover: ['professor'] } },
-  { modulo: 'materiais', descricao: 'Estoque de materiais', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
-  { modulo: 'categorias', descricao: 'Categorias de material', perfis: { listar: ['professor', 'aluno'], criar: ['professor'], editar: ['professor'], remover: ['professor'] } },
-  { modulo: 'movimentacoes', descricao: 'Entradas/saídas de estoque', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'], remover: ['professor'] } },
-  { modulo: 'esterilizacoes', descricao: 'Ciclos de esterilização (CME)', perfis: { listar: ['professor', 'aluno'], criar: ['professor', 'aluno'], editar: ['professor', 'aluno'], remover: ['professor'] } },
-  { modulo: 'notificacoes', descricao: 'Notificações do usuário', perfis: { listar: ['professor', 'aluno', 'recepcionista'], criar: ['professor'], editar: ['professor', 'aluno', 'recepcionista'], remover: ['professor', 'aluno', 'recepcionista'] } },
-  { modulo: 'logs', descricao: 'Logs e auditoria do sistema', perfis: { listar: ['professor'] } },
+  { modulo: 'usuarios', descricao: 'Gestão de usuários do sistema', perfis: { listar: ['coordenador'], criar: ['coordenador'], editar: ['coordenador'], remover: ['coordenador'] } },
+  { modulo: 'pacientes', descricao: 'Cadastro e prontuário de pacientes', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor', 'recepcionista'], editar: ['coordenador', 'professor', 'recepcionista'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'pacientes.documentos', descricao: 'Upload/download de documentos do paciente', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor', 'recepcionista'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'pacientes.evolucao', descricao: 'Prontuário / evolução clínica', perfis: { listar: ['coordenador', 'professor', 'aluno'], criar: ['coordenador', 'professor', 'aluno'] } },
+  { modulo: 'consultas', descricao: 'Agenda de consultas', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor', 'aluno', 'recepcionista'], editar: ['coordenador', 'professor', 'aluno', 'recepcionista'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'cirurgias', descricao: 'Agenda de cirurgias', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor', 'aluno'], editar: ['coordenador', 'professor', 'aluno'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'cirurgias.mutiroes', descricao: 'Mutirões cirúrgicos', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor'], editar: ['coordenador', 'professor'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'cirurgias.alunos', descricao: 'Compartilhamento de cursos (alunos vinculados)', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'materiais', descricao: 'Estoque de materiais', perfis: { listar: ['coordenador', 'professor', 'aluno'], criar: ['coordenador', 'professor', 'aluno'], editar: ['coordenador', 'professor', 'aluno'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'categorias', descricao: 'Categorias de material', perfis: { listar: ['coordenador', 'professor', 'aluno'], criar: ['coordenador', 'professor'], editar: ['coordenador', 'professor'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'movimentacoes', descricao: 'Entradas/saídas de estoque', perfis: { listar: ['coordenador', 'professor', 'aluno'], criar: ['coordenador', 'professor', 'aluno'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'esterilizacoes', descricao: 'Ciclos de esterilização (CME)', perfis: { listar: ['coordenador', 'professor', 'aluno'], criar: ['coordenador', 'professor', 'aluno'], editar: ['coordenador', 'professor', 'aluno'], remover: ['coordenador', 'professor'] } },
+  { modulo: 'notificacoes', descricao: 'Notificações do usuário', perfis: { listar: ['coordenador', 'professor', 'aluno', 'recepcionista'], criar: ['coordenador', 'professor'], editar: ['coordenador', 'professor', 'aluno', 'recepcionista'], remover: ['coordenador', 'professor', 'aluno', 'recepcionista'] } },
+  { modulo: 'logs', descricao: 'Logs e auditoria do sistema', perfis: { listar: ['coordenador'] } },
 ];
 
 function obterMatriz() {

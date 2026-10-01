@@ -3,7 +3,7 @@
 const bcrypt = require('bcrypt');
 const usuarioRepository = require('../repositories/usuarioRepository');
 
-const PERFIS_VALIDOS = ['professor', 'aluno', 'recepcionista'];
+const PERFIS_VALIDOS = ['coordenador', 'professor', 'aluno', 'recepcionista'];
 
 async function listar(filtros) {
   return usuarioRepository.listar(filtros);

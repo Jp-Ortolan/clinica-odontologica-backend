@@ -20,7 +20,7 @@ app.use(cors());
 // Limite elevado para acomodar documentos de paciente enviados em base64
 // (endpoint /api/pacientes/:id/documentos) — o padrão do Express (100kb) é
 // pequeno demais para PDFs/imagens de exame.
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '12mb' }));
 
 // Healthcheck — usado pelo Render e por monitoramento externo.
 app.get('/health', (req, res) => {

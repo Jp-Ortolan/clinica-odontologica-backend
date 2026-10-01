@@ -3,10 +3,11 @@
 const pool = require('../config/database');
 
 const SELECT_BASE = `
-  SELECT mv.*, m.nome AS material_nome, u.nome AS usuario_nome
+  SELECT mv.*, m.nome AS material_nome, u.nome AS usuario_nome, l.lote AS lote_nome, l.validade AS lote_validade
   FROM movimentacao_estoque mv
   JOIN material m ON m.id = mv.material_id
   JOIN usuario u ON u.id = mv.usuario_id
+  LEFT JOIN material_lote l ON l.id = mv.lote_id
 `;
 
 async function listar(filtros = {}) {
